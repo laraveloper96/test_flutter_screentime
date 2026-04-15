@@ -12,7 +12,7 @@ class ManagedSettingsScreen extends StatefulWidget {
 class _ManagedSettingsScreenState extends State<ManagedSettingsScreen> {
   final _managedSettings = const ManagedSettings();
   final _appGroupController = TextEditingController(
-      text: "group.dev.iori.flutterScreentimePluginTemplateIoriExample");
+      text: "group.com.ssssstudios.time4kids");
 
   bool _isBlocking = false;
   bool _isLoading = false;
@@ -20,6 +20,20 @@ class _ManagedSettingsScreenState extends State<ManagedSettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _initAppGroupAndStatus();
+  }
+
+  Future<void> _initAppGroupAndStatus() async {
+    // Guardar el App Group ID automáticamente al entrar a la pantalla,
+    // para que configureShield() siempre tenga acceso al App Group.
+    final groupId = _appGroupController.text.trim();
+    if (groupId.isNotEmpty) {
+      try {
+        await _managedSettings.setSharedContainerId(groupId);
+      } on PlatformException catch (_) {
+        // Ignorar: el usuario puede corregirlo manualmente.
+      }
+    }
     _refreshBlockingStatus();
   }
 

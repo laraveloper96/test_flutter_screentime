@@ -4,6 +4,12 @@ import Flutter
 import ManagedSettings
 import SwiftUI
 import UIKit
+import os
+
+private let pluginLog = Logger(
+  subsystem: "dev.iori.flutterScreentimePluginTemplateIoriExample",
+  category: "FlutterScreentime"
+)
 
 private enum StorageKey {
   static let sharedContainerId = "flutter_screentime.sharedContainerId"
@@ -313,10 +319,14 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     }
 
     persist(true, forKey: StorageKey.blockingEnabled)
+    let appCount = selection.applicationTokens.count
+    let catCount = selection.categoryTokens.count
+    pluginLog.info("📱 startBlocking: shielding \(appCount) apps, \(catCount) categories")
     store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
     store.shield.applicationCategories = selection.categoryTokens.isEmpty
       ? nil
       : ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
+    pluginLog.info("📱 ManagedSettingsStore shield applied — store=\(String(describing: self.store))")
     result(nil)
   }
 
@@ -431,9 +441,18 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
   // MARK: - Storage helpers
 
   private func persist(_ value: Any?, forKey key: String) {
+    let appGroupId = UserDefaults.standard.string(forKey: StorageKey.sharedContainerId)
+    let shared = sharedDefaults()
+    pluginLog.info("📱 persist key=\(key) — appGroupId=\(appGroupId ?? "NOT SET") — sharedDefaults available=\(shared != nil)")
     if let value {
       UserDefaults.standard.set(value, forKey: key)
-      sharedDefaults()?.set(value, forKey: key)
+      if let shared {
+        shared.set(value, forKey: key)
+        shared.synchronize()
+        pluginLog.info("📱 ✅ Written to App Group for key=\(key)")
+      } else {
+        pluginLog.error("📱 ❌ Could NOT write to App Group (nil) for key=\(key)")
+      }
     } else {
       UserDefaults.standard.removeObject(forKey: key)
       sharedDefaults()?.removeObject(forKey: key)

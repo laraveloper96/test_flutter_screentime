@@ -1,5 +1,6 @@
 // ignore_for_file: implementation_imports
 import 'package:flutter/material.dart';
+import 'package:flutter_screentime/flutter_screentime.dart' show ManagedSettings;
 import 'package:flutter_screentime/src/shield_extension.dart';
 
 class ShieldConfigScreen extends StatefulWidget {
@@ -16,14 +17,17 @@ class _ShieldConfigScreenState extends State<ShieldConfigScreen> {
   );
   final _primaryLabelController = TextEditingController(text: 'Entendido');
   final _secondaryLabelController = TextEditingController(text: 'Ignorar');
-  final _bgColorController = TextEditingController(text: '#111827');
-  final _primaryColorController = TextEditingController(text: '#3B82F6');
-  final _primaryTextColorController = TextEditingController(text: '#FFFFFF');
+  final _bgColorController = TextEditingController(text: '#FF0000');
+  final _primaryColorController = TextEditingController(text: '#000000');
+  final _primaryTextColorController = TextEditingController(text: '#800080');
 
   ShieldBackgroundBlurStyle _blurStyle = ShieldBackgroundBlurStyle.dark;
 
   final GlobalKey _repaintKey = GlobalKey();
   final _shieldExtension = const ShieldExtension();
+  final _managedSettings = const ManagedSettings();
+
+  static const _kAppGroupId = 'group.com.ssssstudios.time4kids';
 
   Color? _parseHex(String hex) {
     try {
@@ -39,6 +43,9 @@ class _ShieldConfigScreenState extends State<ShieldConfigScreen> {
   }
 
   Future<void> _applyConfig() async {
+    // Garantizar que el App Group esté registrado antes de escribir el config.
+    await _managedSettings.setSharedContainerId(_kAppGroupId);
+
     final config = ScreenTimeBlockScreenConfig(
       title: _titleController.text.trim().isEmpty
           ? null
@@ -312,8 +319,8 @@ class _SectionHeader extends StatelessWidget {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
+            fontWeight: FontWeight.bold,
+          ),
     );
   }
 }

@@ -1,12 +1,15 @@
 // ShieldConfigurationExtension.swift
-// Copia como ShieldConfigurationExtension.swift en tu target de extensión.
-// Requiere: App Group compartido, entitlement com.apple.developer.family-controls
-
 import ManagedSettings
 import ManagedSettingsUI
 import UIKit
+import os
 
-private let kAppGroupID = "group.dev.iori.flutterScreentimePluginTemplateIoriExample" // ⚠️ Reemplaza con tu App Group ID
+private let kAppGroupID = "group.com.ssssstudios.time4kids"
+
+private let log = Logger(
+  subsystem: "com.ssssstudios.time4kids.ShieldConfigurationExtension",
+  category: "ShieldConfig"
+)
 
 @available(iOS 16.0, *)
 class ShieldConfigurationExtension: ShieldConfigurationDataSource {
@@ -14,14 +17,17 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
   override func configuration(
     shielding application: Application
   ) -> ShieldConfiguration {
-    buildConfiguration()
+    log.info("🛡️ configuration(shielding:) called — extension IS being called")
+    return buildConfiguration()
   }
 
   private func buildConfiguration() -> ShieldConfiguration {
     let defaults = UserDefaults(suiteName: kAppGroupID)
+    log.info("🛡️ UserDefaults(suiteName:) is nil: \(defaults == nil)")
 
-    // Opción A: leer configuración de texto/colores desde App Group
     let config = defaults?.dictionary(forKey: "flutter_screentime.blockScreenConfig")
+    log.info("🛡️ blockScreenConfig from App Group: \(String(describing: config))")
+
     let title = config?["title"] as? String
     let subtitle = config?["subtitle"] as? String
     let primaryLabel = config?["primaryButtonLabel"] as? String
@@ -31,16 +37,19 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
     let bgColorHex = config?["backgroundColorHex"] as? String
     let blurStyleStr = config?["backgroundBlurStyle"] as? String
 
-    // Opción B: intentar cargar ícono PNG personalizado desde App Group
+    log.info("🛡️ title=\(title ?? "nil"), bgColor=\(bgColorHex ?? "nil"), blur=\(blurStyleStr ?? "nil")")
+
     var icon: UIImage? = nil
     if let containerURL = FileManager.default.containerURL(
       forSecurityApplicationGroupIdentifier: kAppGroupID
     ) {
       let iconURL = containerURL.appendingPathComponent("flutter_screentime_shield_icon.png")
       icon = UIImage(contentsOfFile: iconURL.path)
+      log.info("🛡️ App Group container URL: \(containerURL.path)")
+    } else {
+      log.error("🛡️ Could not access App Group container — check entitlements")
     }
 
-    // Construir ShieldConfiguration
     let primaryButton: ShieldConfiguration.Label? = primaryLabel.map {
       .init(text: $0, color: UIColor(hex: primaryTextColorHex ?? "#FFFFFF") ?? .white)
     }
@@ -49,6 +58,8 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
     }
 
     let backgroundColor: UIColor? = UIColor(hex: bgColorHex ?? "#111827")
+
+    log.info("🛡️ Returning ShieldConfiguration with backgroundColor=\(bgColorHex ?? "#111827")")
 
     return ShieldConfiguration(
       backgroundBlurStyle: blurStyle(from: blurStyleStr),
