@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'screens/device_activity_screen.dart';
 import 'screens/family_controls_screen.dart';
 import 'screens/managed_settings_screen.dart';
+import 'screens/shield_config_screen.dart';
+import 'screens/shield_events_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -67,25 +70,31 @@ class HomeScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder: (_) => const _PlaceholderScreen(
-                  title: 'DeviceActivity',
-                  message: 'DeviceActivity - próximamente',
-                ),
+                builder: (_) => const DeviceActivityScreen(),
               ),
             ),
           ),
           const SizedBox(height: 12),
           _MenuCard(
-            title: 'ShieldExtension',
-            subtitle: 'Configurar la pantalla de bloqueo',
+            title: 'Shield — Configuración',
+            subtitle: 'Personalizar la pantalla de bloqueo',
             icon: Icons.shield,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder: (_) => const _PlaceholderScreen(
-                  title: 'ShieldExtension',
-                  message: 'ShieldExtension - próximamente',
-                ),
+                builder: (_) => const ShieldConfigScreen(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _MenuCard(
+            title: 'Shield — Eventos',
+            subtitle: 'Streams de ShieldAction y ActivityEvent',
+            icon: Icons.stream,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const ShieldEventsScreen(),
               ),
             ),
           ),
@@ -131,20 +140,3 @@ class _MenuCard extends StatelessWidget {
   }
 }
 
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({
-    required this.title,
-    required this.message,
-  });
-
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(message)),
-    );
-  }
-}
