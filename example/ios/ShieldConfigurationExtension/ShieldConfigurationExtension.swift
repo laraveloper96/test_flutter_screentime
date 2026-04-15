@@ -6,7 +6,7 @@ import ManagedSettings
 import ManagedSettingsUI
 import UIKit
 
-private let kAppGroupID = "group.your.app" // ⚠️ Reemplaza con tu App Group ID
+private let kAppGroupID = "group.dev.iori.flutterScreentimePluginTemplateIoriExample" // ⚠️ Reemplaza con tu App Group ID
 
 @available(iOS 16.0, *)
 class ShieldConfigurationExtension: ShieldConfigurationDataSource {

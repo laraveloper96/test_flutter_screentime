@@ -11,7 +11,8 @@ class ManagedSettingsScreen extends StatefulWidget {
 
 class _ManagedSettingsScreenState extends State<ManagedSettingsScreen> {
   final _managedSettings = const ManagedSettings();
-  final _appGroupController = TextEditingController();
+  final _appGroupController = TextEditingController(
+      text: "group.dev.iori.flutterScreentimePluginTemplateIoriExample");
 
   bool _isBlocking = false;
   bool _isLoading = false;

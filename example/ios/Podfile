@@ -35,8 +35,55 @@ target 'Runner' do
   end
 end
 
+target 'ShieldConfigurationExtension' do
+  use_frameworks!
+  inherit! :search_paths
+end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      if target.name == 'ShieldConfigurationExtension'
+        config.build_settings['ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES'] = 'NO'
+      end
+    end
   end
+
+  # Fix definitivo para el ciclo de build Flutter + App Extensions.
+  # Deshabilita "Based on dependency analysis" en el script "Thin Binary"
+  # de Flutter (equivalente a marcar alwaysOutOfDate = 1 en Xcode).
+  # Esto rompe el ciclo circular entre Thin Binary, Embed Pods Frameworks
+  # y Embed App Extensions sin afectar la correctitud del build.
+  project_path = File.join(File.dirname(File.realpath(__FILE__)), 'Runner.xcodeproj')
+  project = Xcodeproj::Project.open(project_path)
+
+  # Fix definitivo para ciclo de build Flutter + App Extensions:
+  # El ciclo ocurre porque [CP] Embed Pods Frameworks declara
+  # flutter_screentime.framework como output via outputFileListPaths,
+  # y Xcode crea un edge de dependencia desde CodeSign hacia ese output.
+  # Al vaciar los output_file_list_paths Xcode no puede rastrear ese edge
+  # y el ciclo desaparece. El script sigue embebiendo los frameworks
+  # correctamente porque outputFileListPaths solo afecta el análisis de
+  # dependencias, no la ejecución del script.
+  project.targets.each do |target|
+    next unless target.name == 'Runner'
+    target.build_phases.each do |phase|
+      next unless phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
+      if phase.name == 'Thin Binary'
+        phase.always_out_of_date = '1'
+        phase.input_paths = []
+        phase.output_paths = []
+        phase.input_file_list_paths = []
+        phase.output_file_list_paths = []
+      elsif phase.name == '[CP] Embed Pods Frameworks'
+        phase.always_out_of_date = '1'
+        phase.input_file_list_paths = []
+        phase.output_paths = []
+        phase.output_file_list_paths = []
+      end
+    end
+  end
+
+  project.save
 end
