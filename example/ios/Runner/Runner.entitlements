@@ -7,8 +7,6 @@
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.ssssstudios.time4kids</string>
-		<string>group.com.ssssstudios.time4kids.sharedData</string>
-		<string>group.dev.iori.flutterScreentimePluginTemplateIoriExample</string>
 	</array>
 </dict>
 </plist>

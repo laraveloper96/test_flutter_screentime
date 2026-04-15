@@ -171,6 +171,10 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       }
       saveShieldIcon(data: iconData, result: result)
 
+    // MARK: - Diagnostics
+    case "getExtensionDiagnostic":
+      result(readExtensionDiagnostic())
+
     // MARK: - Legacy / Android-only
     case "setBlockedPackages":
       guard let blockedPackages = call.arguments as? [String] else {
@@ -427,6 +431,28 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       result(nil)
     } catch {
       result(FlutterError(code: "write_failed", message: error.localizedDescription, details: nil))
+    }
+  }
+
+  private func readExtensionDiagnostic() -> String {
+    guard let appGroupId = UserDefaults.standard.string(forKey: StorageKey.sharedContainerId) else {
+      return "❌ sharedContainerId no configurado — presiona 'Guardar App Group ID' primero"
+    }
+    guard let shared = UserDefaults(suiteName: appGroupId) else {
+      return "❌ No se puede acceder al App Group '\(appGroupId)'"
+    }
+
+    let ts = shared.double(forKey: "flutter_screentime.extensionLastRun")
+    let trigger = shared.string(forKey: "flutter_screentime.extensionLastTrigger") ?? "?"
+    let configExists = shared.dictionary(forKey: "flutter_screentime.blockScreenConfig") != nil
+
+    if ts > 0 {
+      let date = Date(timeIntervalSince1970: ts)
+      let fmt = DateFormatter()
+      fmt.dateFormat = "HH:mm:ss"
+      return "✅ Extensión corrió a las \(fmt.string(from: date)) — trigger=\(trigger) — config=\(configExists ? "presente" : "AUSENTE")"
+    } else {
+      return "❌ Extensión NUNCA corrió — ts=0 — config en AppGroup=\(configExists)"
     }
   }
 

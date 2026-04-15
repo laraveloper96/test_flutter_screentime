@@ -71,6 +71,23 @@ class _ManagedSettingsScreenState extends State<ManagedSettingsScreen> {
     }
   }
 
+  Future<void> _checkExtensionDiagnostic() async {
+    const channel = MethodChannel('flutter_screentime');
+    try {
+      final result = await channel.invokeMethod<String>('getExtensionDiagnostic');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result ?? 'Sin respuesta'),
+          duration: const Duration(seconds: 6),
+          backgroundColor: (result?.startsWith('✅') ?? false) ? Colors.green : Colors.red,
+        ),
+      );
+    } on PlatformException catch (e) {
+      _showError(e.message ?? e.code);
+    }
+  }
+
   Future<void> _startBlocking() async {
     setState(() => _isLoading = true);
     try {
@@ -210,7 +227,19 @@ class _ManagedSettingsScreenState extends State<ManagedSettingsScreen> {
           OutlinedButton.icon(
             onPressed: (_isLoading || !_isBlocking) ? null : _stopBlocking,
             icon: const Icon(Icons.stop),
+
             label: const Text('Detener bloqueo'),
+          ),
+
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
+          Text('Diagnóstico', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _isLoading ? null : _checkExtensionDiagnostic,
+            icon: const Icon(Icons.bug_report_outlined),
+            label: const Text('¿Corrió ShieldConfigurationExtension?'),
           ),
 
           if (_isLoading) ...[

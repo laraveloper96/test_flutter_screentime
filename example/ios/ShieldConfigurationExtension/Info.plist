@@ -23,7 +23,7 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.ManagedSettingsUI.shield-configuration-service</string>
 		<key>NSExtensionPrincipalClass</key>
-		<string>$(PRODUCT_MODULE_NAME).ShieldConfigurationExtension</string>
+		<string>$(PRODUCT_MODULE_NAME).ShieldConfigDataSource</string>
 	</dict>
 </dict>
 </plist>
