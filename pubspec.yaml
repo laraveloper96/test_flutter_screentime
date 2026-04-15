@@ -8,7 +8,7 @@ documentation: https://github.com/ioridev/flutter_screentime/blob/main/README.md
 
 environment:
   sdk: ^3.0.0
-  flutter: '>=3.22.0'
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
@@ -22,8 +22,5 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
-      android:
-        package: dev.iori.flutter_screentime
-        pluginClass: FlutterScreentimePlugin
       ios:
         pluginClass: FlutterScreentimePlugin

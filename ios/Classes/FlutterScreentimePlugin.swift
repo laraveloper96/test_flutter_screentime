@@ -1,3 +1,4 @@
+import DeviceActivity
 import FamilyControls
 import Flutter
 import ManagedSettings
@@ -10,6 +11,9 @@ private enum StorageKey {
   static let blockedPackages = "flutter_screentime.blockedPackages"
   static let blockedSelection = "flutter_screentime.blockedSelection"
   static let blockingEnabled = "flutter_screentime.blockingEnabled"
+  static let activitySchedule = "flutter_screentime.activitySchedule"
+  static let dailyTimeLimit = "flutter_screentime.dailyTimeLimit"
+  static let shieldIcon = "flutter_screentime.shieldIcon"
 }
 
 private final class BlockedAppsPickerModel: ObservableObject {
@@ -44,8 +48,34 @@ private struct BlockedAppsPickerView: View {
   }
 }
 
+fileprivate class ShieldActionStreamHandler: NSObject, FlutterStreamHandler {
+  var eventSink: FlutterEventSink?
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+    eventSink = events
+    return nil
+  }
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    eventSink = nil
+    return nil
+  }
+}
+
+fileprivate class ActivityEventStreamHandler: NSObject, FlutterStreamHandler {
+  var eventSink: FlutterEventSink?
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+    eventSink = events
+    return nil
+  }
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    eventSink = nil
+    return nil
+  }
+}
+
 public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
   private let store = ManagedSettingsStore()
+  fileprivate let shieldActionHandler = ShieldActionStreamHandler()
+  fileprivate let activityEventHandler = ActivityEventStreamHandler()
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
@@ -54,14 +84,38 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     )
     let instance = FlutterScreentimePlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
+
+    let shieldActionChannel = FlutterEventChannel(
+      name: "flutter_screentime/shield_action",
+      binaryMessenger: registrar.messenger()
+    )
+    shieldActionChannel.setStreamHandler(instance.shieldActionHandler)
+
+    let activityEventChannel = FlutterEventChannel(
+      name: "flutter_screentime/activity_event",
+      binaryMessenger: registrar.messenger()
+    )
+    activityEventChannel.setStreamHandler(instance.activityEventHandler)
+
+    registrar.addApplicationDelegate(instance)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
+
+    // MARK: - FamilyControls
     case "checkAuthorization":
       result(currentAuthorizationStatus())
     case "requestAuthorization":
       requestAuthorization(result: result)
+    case "revokeAuthorization":
+      revokeAuthorization(result: result)
+    case "selectBlockedApps":
+      presentBlockedAppsPicker(result: result)
+    case "getSelectedAppsSummary":
+      result(selectedAppsSummaryMap())
+
+    // MARK: - ManagedSettings
     case "setSharedContainerId":
       guard let appGroupId = call.arguments as? String, !appGroupId.isEmpty else {
         result(FlutterError(code: "invalid_args", message: "Expected a non-empty app group id.", details: nil))
@@ -70,13 +124,48 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       UserDefaults.standard.set(appGroupId, forKey: StorageKey.sharedContainerId)
       synchronizeStoredValuesToSharedDefaults()
       result(nil)
-    case "configureBlockScreen":
+    case "startBlocking":
+      applyStoredSelection(result: result)
+    case "stopBlocking":
+      persist(false, forKey: StorageKey.blockingEnabled)
+      store.clearAllSettings()
+      result(nil)
+    case "getBlockingStatus":
+      let isEnabled = storedValue(forKey: StorageKey.blockingEnabled) as? Bool ?? false
+      result(isEnabled)
+
+    // MARK: - DeviceActivity
+    case "setSchedule":
+      guard let args = call.arguments as? [String: Any] else {
+        result(FlutterError(code: "invalid_args", message: "Expected schedule map.", details: nil))
+        return
+      }
+      setSchedule(args: args, result: result)
+    case "getSchedule":
+      result(storedScheduleMap())
+    case "clearSchedule":
+      clearSchedule(result: result)
+    case "startMonitoring":
+      startMonitoring(result: result)
+    case "stopMonitoring":
+      stopMonitoring(result: result)
+
+    // MARK: - ShieldExtension
+    case "configureBlockScreen", "configureShield":
       guard let arguments = call.arguments as? [String: Any] else {
         result(FlutterError(code: "invalid_args", message: "Expected a configuration map.", details: nil))
         return
       }
       persist(arguments, forKey: StorageKey.blockScreenConfig)
       result(nil)
+    case "setShieldIcon":
+      guard let iconData = (call.arguments as? FlutterStandardTypedData)?.data else {
+        result(FlutterError(code: "invalid_args", message: "Expected PNG bytes.", details: nil))
+        return
+      }
+      saveShieldIcon(data: iconData, result: result)
+
+    // MARK: - Legacy / Android-only
     case "setBlockedPackages":
       guard let blockedPackages = call.arguments as? [String] else {
         result(FlutterError(code: "invalid_args", message: "Expected a list of package names.", details: nil))
@@ -84,18 +173,13 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       }
       persist(blockedPackages, forKey: StorageKey.blockedPackages)
       result(nil)
-    case "selectBlockedApps":
-      presentBlockedAppsPicker(result: result)
-    case "startBlocking":
-      applyStoredSelection(result: result)
-    case "stopBlocking":
-      persist(false, forKey: StorageKey.blockingEnabled)
-      store.clearAllSettings()
-      result(nil)
+
     default:
       result(FlutterMethodNotImplemented)
     }
   }
+
+  // MARK: - FamilyControls private methods
 
   private func currentAuthorizationStatus() -> String {
     switch AuthorizationCenter.shared.authorizationStatus {
@@ -121,6 +205,32 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
           message: error.localizedDescription,
           details: nil
         ))
+      }
+    }
+  }
+
+  private func revokeAuthorization(result: @escaping FlutterResult) {
+    Task { @MainActor in
+      do {
+        try await AuthorizationCenter.shared.revokeAuthorization(completionHandler: { _ in })
+        self.store.clearAllSettings()
+        if #available(iOS 16.0, *) {
+          DeviceActivityCenter().stopMonitoring()
+        }
+        let keysToRemove = [
+          StorageKey.blockScreenConfig,
+          StorageKey.blockedPackages,
+          StorageKey.blockedSelection,
+          StorageKey.blockingEnabled,
+          StorageKey.activitySchedule,
+        ]
+        keysToRemove.forEach { key in
+          UserDefaults.standard.removeObject(forKey: key)
+          self.sharedDefaults()?.removeObject(forKey: key)
+        }
+        result(nil)
+      } catch {
+        result(FlutterError(code: "revoke_failed", message: error.localizedDescription, details: nil))
       }
     }
   }
@@ -157,24 +267,13 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     presenter.present(hostingController, animated: true)
   }
 
-  private func applyStoredSelection(result: FlutterResult) {
+  private func selectedAppsSummaryMap() -> [String: Int] {
     let selection = storedSelection()
-    let hasSelection = !selection.applicationTokens.isEmpty || !selection.categoryTokens.isEmpty
-    guard hasSelection else {
-      result(FlutterError(
-        code: "missing_selection",
-        message: "Call selectBlockedApps before startBlocking on iOS.",
-        details: nil
-      ))
-      return
-    }
-
-    persist(true, forKey: StorageKey.blockingEnabled)
-    store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
-    store.shield.applicationCategories = selection.categoryTokens.isEmpty
-      ? nil
-      : ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
-    result(nil)
+    return [
+      "applicationCount": selection.applicationTokens.count,
+      "categoryCount": selection.categoryTokens.count,
+      "webDomainCount": selection.webDomainTokens.count,
+    ]
   }
 
   private func storedSelection() -> FamilyActivitySelection {
@@ -195,8 +294,141 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     [
       "applicationCount": selection.applicationTokens.count,
       "categoryCount": selection.categoryTokens.count,
+      "webDomainCount": selection.webDomainTokens.count,
     ]
   }
+
+  // MARK: - ManagedSettings private methods
+
+  private func applyStoredSelection(result: FlutterResult) {
+    let selection = storedSelection()
+    let hasSelection = !selection.applicationTokens.isEmpty || !selection.categoryTokens.isEmpty
+    guard hasSelection else {
+      result(FlutterError(
+        code: "missing_selection",
+        message: "Call selectBlockedApps before startBlocking on iOS.",
+        details: nil
+      ))
+      return
+    }
+
+    persist(true, forKey: StorageKey.blockingEnabled)
+    store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
+    store.shield.applicationCategories = selection.categoryTokens.isEmpty
+      ? nil
+      : ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
+    result(nil)
+  }
+
+  // MARK: - DeviceActivity private methods
+
+  private func setSchedule(args: [String: Any], result: FlutterResult) {
+    guard #available(iOS 16.0, *) else {
+      result(FlutterError(code: "unsupported_ios", message: "DeviceActivity requires iOS 16+.", details: nil))
+      return
+    }
+    persist(args, forKey: StorageKey.activitySchedule)
+    startMonitoringWithArgs(args, result: result)
+  }
+
+  @available(iOS 16.0, *)
+  private func startMonitoringWithArgs(_ args: [String: Any], result: FlutterResult) {
+    let center = DeviceActivityCenter()
+    let startHour = args["startHour"] as? Int ?? 0
+    let startMinute = args["startMinute"] as? Int ?? 0
+    let endHour = args["endHour"] as? Int ?? 23
+    let endMinute = args["endMinute"] as? Int ?? 59
+    let dailySeconds = args["dailyTimeLimitSeconds"] as? Int
+
+    let schedule = DeviceActivitySchedule(
+      intervalStart: DateComponents(hour: startHour, minute: startMinute),
+      intervalEnd: DateComponents(hour: endHour, minute: endMinute),
+      repeats: true,
+      warningTime: nil
+    )
+
+    var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
+    if let seconds = dailySeconds {
+      let threshold = DateComponents(second: seconds)
+      events[DeviceActivityEvent.Name("flutter_screentime.dailyLimit")] = DeviceActivityEvent(
+        threshold: threshold
+      )
+    }
+
+    do {
+      try center.startMonitoring(
+        DeviceActivityName("flutter_screentime.schedule"),
+        during: schedule,
+        events: events
+      )
+      result(nil)
+    } catch {
+      result(FlutterError(code: "monitoring_failed", message: error.localizedDescription, details: nil))
+    }
+  }
+
+  private func storedScheduleMap() -> [String: Any]? {
+    storedValue(forKey: StorageKey.activitySchedule) as? [String: Any]
+  }
+
+  private func clearSchedule(result: FlutterResult) {
+    guard #available(iOS 16.0, *) else {
+      persist(nil, forKey: StorageKey.activitySchedule)
+      result(nil)
+      return
+    }
+    DeviceActivityCenter().stopMonitoring([DeviceActivityName("flutter_screentime.schedule")])
+    persist(nil, forKey: StorageKey.activitySchedule)
+    result(nil)
+  }
+
+  private func startMonitoring(result: FlutterResult) {
+    guard #available(iOS 16.0, *) else {
+      result(FlutterError(code: "unsupported_ios", message: "DeviceActivity requires iOS 16+.", details: nil))
+      return
+    }
+    if let storedArgs = storedValue(forKey: StorageKey.activitySchedule) as? [String: Any] {
+      startMonitoringWithArgs(storedArgs, result: result)
+    } else {
+      result(FlutterError(code: "no_schedule", message: "No schedule stored. Call setSchedule first.", details: nil))
+    }
+  }
+
+  private func stopMonitoring(result: FlutterResult) {
+    guard #available(iOS 16.0, *) else {
+      result(nil)
+      return
+    }
+    DeviceActivityCenter().stopMonitoring()
+    result(nil)
+  }
+
+  // MARK: - ShieldExtension private methods
+
+  private func saveShieldIcon(data: Data, result: FlutterResult) {
+    guard let appGroupId = UserDefaults.standard.string(forKey: StorageKey.sharedContainerId),
+          let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
+      result(FlutterError(code: "no_app_group", message: "Set sharedContainerId before calling setShieldIcon.", details: nil))
+      return
+    }
+    let iconURL = containerURL.appendingPathComponent("flutter_screentime_shield_icon.png")
+    do {
+      try data.write(to: iconURL)
+      result(nil)
+    } catch {
+      result(FlutterError(code: "write_failed", message: error.localizedDescription, details: nil))
+    }
+  }
+
+  func emitShieldAction(_ action: String) {
+    shieldActionHandler.eventSink?(action)
+  }
+
+  func emitActivityEvent(_ event: [String: Any]) {
+    activityEventHandler.eventSink?(event)
+  }
+
+  // MARK: - Storage helpers
 
   private func persist(_ value: Any?, forKey key: String) {
     if let value {
@@ -236,6 +468,8 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     }
   }
 
+  // MARK: - UI helpers
+
   private func topViewController(base: UIViewController? = nil) -> UIViewController? {
     let baseController = base ?? UIApplication.shared
       .connectedScenes
@@ -258,5 +492,26 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     }
 
     return baseController
+  }
+}
+
+// MARK: - URL scheme handler (ShieldActionExtension deep link)
+
+extension FlutterScreentimePlugin {
+  public func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    guard url.scheme == "flutter-screentime",
+          url.host == "shield-action",
+          let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+          let buttonParam = components.queryItems?.first(where: { $0.name == "button" })?.value
+    else {
+      return false
+    }
+    let action = buttonParam == "primary" ? "primaryButton" : "secondaryButton"
+    emitShieldAction(action)
+    return true
   }
 }

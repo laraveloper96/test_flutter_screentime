@@ -1,188 +1,150 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_screentime/flutter_screentime.dart';
+
+import 'screens/family_controls_screen.dart';
+import 'screens/managed_settings_screen.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  final _screenTime = const FlutterScreentime();
-  ScreenTimeAuthorizationStatus _status =
-      ScreenTimeAuthorizationStatus.notDetermined;
-  String _message = 'Idle';
-
-  @override
-  void initState() {
-    super.initState();
-    _refreshAuthorization();
-  }
-
-  Future<void> _refreshAuthorization() async {
-    try {
-      final status = await _screenTime.checkAuthorization();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _status = status;
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _message = _errorMessage(error);
-      });
-    }
-  }
-
-  Future<void> _requestAuthorization() async {
-    try {
-      final status = await _screenTime.requestAuthorization();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _status = status;
-        _message = 'Authorization updated';
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _message = _errorMessage(error);
-      });
-    }
-  }
-
-  Future<void> _selectBlockedApps() async {
-    try {
-      final summary = await _screenTime.selectBlockedApps();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _message =
-            'Selected ${summary.applicationCount} apps and ${summary.categoryCount} categories';
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _message = _errorMessage(error);
-      });
-    }
-  }
-
-  Future<void> _configureBlockScreen() async {
-    await _screenTime.configureBlockScreen(
-      const ScreenTimeBlockScreenConfig(
-        title: 'Focus mode',
-        message: 'This app is blocked right now.',
-        backgroundColorHex: '#0F172A',
-        textColorHex: '#F8FAFC',
-        primaryButtonLabel: 'Open app',
-        secondaryButtonLabel: 'Settings',
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _message = 'Block screen updated';
-    });
-  }
-
-  Future<void> _startBlocking() async {
-    try {
-      if (Platform.isAndroid) {
-        await _screenTime.setBlockedPackages(const <String>[]);
-      }
-      await _screenTime.startBlocking();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _message = 'Blocking started';
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _message = _errorMessage(error);
-      });
-    }
-  }
-
-  Future<void> _stopBlocking() async {
-    await _screenTime.stopBlocking();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _message = 'Blocking stopped';
-    });
-  }
-
-  String _errorMessage(Object error) {
-    if (error is PlatformException) {
-      return error.message ?? error.code;
-    }
-    return error.toString();
-  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: const Text('flutter_screentime example')),
-        body: ListView(
-          padding: const EdgeInsets.all(24),
-          children: <Widget>[
-            Text('Authorization: ${_status.platformValue}'),
-            const SizedBox(height: 8),
-            Text(_message),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _requestAuthorization,
-              child: const Text('Request authorization'),
+      title: 'flutter_screentime',
+      theme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        useMaterial3: true,
+      ),
+      home: const HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('flutter_screentime'),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _MenuCard(
+            title: 'FamilyControls',
+            subtitle: 'Autorización y selección de apps bloqueadas',
+            icon: Icons.family_restroom,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const FamilyControlsScreen(),
+              ),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _configureBlockScreen,
-              child: const Text('Configure block screen'),
+          ),
+          const SizedBox(height: 12),
+          _MenuCard(
+            title: 'ManagedSettings',
+            subtitle: 'Activar y desactivar el bloqueo de apps',
+            icon: Icons.settings_applications,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const ManagedSettingsScreen(),
+              ),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _selectBlockedApps,
-              child: const Text('Select blocked apps (iOS)'),
+          ),
+          const SizedBox(height: 12),
+          _MenuCard(
+            title: 'DeviceActivity',
+            subtitle: 'Horarios automáticos y límites de tiempo',
+            icon: Icons.schedule,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const _PlaceholderScreen(
+                  title: 'DeviceActivity',
+                  message: 'DeviceActivity - próximamente',
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _startBlocking,
-              child: const Text('Start blocking'),
+          ),
+          const SizedBox(height: 12),
+          _MenuCard(
+            title: 'ShieldExtension',
+            subtitle: 'Configurar la pantalla de bloqueo',
+            icon: Icons.shield,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const _PlaceholderScreen(
+                  title: 'ShieldExtension',
+                  message: 'ShieldExtension - próximamente',
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _stopBlocking,
-              child: const Text('Stop blocking'),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuCard extends StatelessWidget {
+  const _MenuCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.primaryContainer,
+          child: Icon(icon, color: theme.colorScheme.primary),
+        ),
+        title: Text(title, style: theme.textTheme.titleMedium),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
         ),
       ),
+    );
+  }
+}
+
+class _PlaceholderScreen extends StatelessWidget {
+  const _PlaceholderScreen({
+    required this.title,
+    required this.message,
+  });
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(child: Text(message)),
     );
   }
 }

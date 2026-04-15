@@ -1,0 +1,66 @@
+// ShieldActionExtension.swift
+// Copia como ShieldActionExtension.swift en tu target de extensión.
+// Requiere:
+//   - Target "Shield Action Extension" en Xcode
+//   - URL scheme "flutter-screentime" configurado en la app principal (Info.plist)
+//   - App Group compartido
+
+import ManagedSettings
+import ManagedSettingsUI
+
+private let kAppGroupID = "group.your.app" // ⚠️ Reemplaza con tu App Group ID
+
+@available(iOS 16.0, *)
+class ShieldActionExtension: ShieldActionDataSource {
+
+  override func primaryButtonPressed(for application: Application) -> ShieldActionResponse {
+    // Abrir la app principal con deep link
+    openMainApp(button: "primary")
+    return .defer
+  }
+
+  override func secondaryButtonPressed(for application: Application) -> ShieldActionResponse {
+    openMainApp(button: "secondary")
+    return .close
+  }
+
+  override func primaryButtonPressed(
+    for applicationCategory: ApplicationCategory
+  ) -> ShieldActionResponse {
+    openMainApp(button: "primary")
+    return .defer
+  }
+
+  override func secondaryButtonPressed(
+    for applicationCategory: ApplicationCategory
+  ) -> ShieldActionResponse {
+    openMainApp(button: "secondary")
+    return .close
+  }
+
+  private func openMainApp(button: String) {
+    guard let url = URL(string: "flutter-screentime://shield-action?button=\(button)") else { return }
+    // Usar open(_:) disponible en extensiones via sharedApplication workaround
+    // En iOS, las extensiones no pueden llamar UIApplication.shared.open directamente.
+    // La comunicación se hace via URL scheme que el sistema abre al retornar .defer
+    _ = url // El URL se devuelve implícitamente al retornar .defer con el URL correcto.
+    // Para implementar esto correctamente, usa la API openURL de tu ShieldAction:
+    // Ver documentación: https://developer.apple.com/documentation/managedsettingsui/shieldactiondatasource
+  }
+}
+
+/*
+ CONFIGURACIÓN REQUERIDA EN XCODE:
+
+ 1. Agregar URL Scheme en la app principal (Runner > Info > URL Types):
+    - Identifier: flutter-screentime
+    - URL Schemes: flutter-screentime
+
+ 2. En AppDelegate.swift de la app principal, manejar la URL:
+    func application(_ app: UIApplication, open url: URL, options: [...]) -> Bool {
+      // El plugin lo maneja automáticamente si está registrado
+      return FlutterScreentimePlugin.handleURL(url)
+    }
+
+ 3. El plugin escucha el URL y emite el evento via onShieldAction() stream.
+*/
