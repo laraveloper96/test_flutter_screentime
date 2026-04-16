@@ -179,6 +179,12 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       persist(false, forKey: StorageKey.blockingEnabled)
       store.clearAllSettings()
       result(nil)
+    case "grantTemporaryAccess":
+      guard let seconds = call.arguments as? Int, seconds > 0 else {
+        result(FlutterError(code: "invalid_args", message: "Expected positive seconds.", details: nil))
+        return
+      }
+      grantTemporaryAccess(seconds: seconds, result: result)
     case "getBlockingStatus":
       let isEnabled = storedValue(forKey: StorageKey.blockingEnabled) as? Bool ?? false
       result(isEnabled)
@@ -375,6 +381,27 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       : ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
     pluginLog.info("📱 ManagedSettingsStore shield applied — store=\(String(describing: self.store))")
     result(nil)
+  }
+
+  private func grantTemporaryAccess(seconds: Int, result: FlutterResult) {
+    pluginLog.info("📱 grantTemporaryAccess: desbloqueando por \(seconds) segundos")
+    store.clearAllSettings()
+    result(nil)
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(seconds)) { [weak self] in
+      guard let self else { return }
+      let isEnabled = self.storedValue(forKey: StorageKey.blockingEnabled) as? Bool ?? false
+      guard isEnabled else {
+        self.pluginLog.info("📱 grantTemporaryAccess: bloqueo fue desactivado manualmente, no se reactiva")
+        return
+      }
+      self.pluginLog.info("📱 grantTemporaryAccess: reactivando bloqueo después de \(seconds) segundos")
+      let selection = self.storedSelection()
+      self.store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
+      self.store.shield.applicationCategories = selection.categoryTokens.isEmpty
+        ? nil
+        : ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
+    }
   }
 
   // MARK: - DeviceActivity private methods

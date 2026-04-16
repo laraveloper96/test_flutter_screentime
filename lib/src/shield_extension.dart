@@ -78,6 +78,18 @@ class ShieldExtension {
     return _channel.invokeMethod<void>('configureShield', config.toMap());
   }
 
+  /// Desbloquea temporalmente las apps bloqueadas durante [duration] y las
+  /// vuelve a bloquear automáticamente al vencer el tiempo.
+  ///
+  /// Llamar después de recibir un evento en [onPermissionRequest] para
+  /// conceder acceso temporal al hijo/usuario.
+  Future<void> grantTemporaryAccess({required Duration duration}) {
+    return _channel.invokeMethod<void>(
+      'grantTemporaryAccess',
+      duration.inSeconds,
+    );
+  }
+
   Future<void> setShieldIcon(Uint8List pngBytes) {
     return _channel.invokeMethod<void>('setShieldIcon', pngBytes);
   }
@@ -104,6 +116,16 @@ class ShieldExtension {
         orElse: () => ShieldAction.primaryButton,
       );
     });
+  }
+
+  /// Stream que emite únicamente cuando el usuario pulsa el botón primario
+  /// del Shield (caso de uso: "Pedir permiso").
+  ///
+  /// Equivalente a `onShieldAction().where((a) => a == ShieldAction.primaryButton)`.
+  Stream<void> onPermissionRequest() {
+    return onShieldAction()
+        .where((action) => action == ShieldAction.primaryButton)
+        .cast<void>();
   }
 
   Stream<ActivityEvent> onActivityEvent() {
