@@ -20,7 +20,10 @@ private enum StorageKey {
   static let activitySchedule = "flutter_screentime.activitySchedule"
   static let dailyTimeLimit = "flutter_screentime.dailyTimeLimit"
   static let shieldIcon = "flutter_screentime.shieldIcon"
+  static let lastActivityEvent = "flutter_screentime.lastActivityEvent"
 }
+
+private let kActivityEventNotification = "dev.iori.flutter_screentime.activity_event"
 
 private final class BlockedAppsPickerModel: ObservableObject {
   @Published var selection: FamilyActivitySelection
@@ -104,6 +107,46 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     activityEventChannel.setStreamHandler(instance.activityEventHandler)
 
     registrar.addApplicationDelegate(instance)
+    instance.setupNotificationObservers()
+  }
+
+  private func setupNotificationObservers() {
+    let center = CFNotificationCenterGetDarwinNotifyCenter()
+    let observer = Unmanaged.passUnretained(self).toOpaque()
+
+    CFNotificationCenterAddObserver(
+      center,
+      observer,
+      { (_, observer, name, _, _) in
+        guard let observer = observer else { return }
+        let plugin = Unmanaged<FlutterScreentimePlugin>.fromOpaque(observer).takeUnretainedValue()
+        plugin.handleActivityEventNotification()
+      },
+      kActivityEventNotification as CFString,
+      nil,
+      .deliverImmediately
+    )
+  }
+
+  private func handleActivityEventNotification() {
+    pluginLog.info("📱 Received Darwin Notification: \(kActivityEventNotification)")
+    guard let shared = sharedDefaults() else {
+      pluginLog.error("📱 Notification received but sharedDefaults is nil")
+      return
+    }
+    
+    guard let eventMap = shared.dictionary(forKey: StorageKey.lastActivityEvent) else {
+      pluginLog.warning("📱 Notification received but no event found in App Group for key: \(StorageKey.lastActivityEvent)")
+      return
+    }
+    
+    pluginLog.info("📱 Bridge: Activity Event found: \(String(describing: eventMap))")
+    shared.removeObject(forKey: StorageKey.lastActivityEvent)
+    shared.synchronize()
+
+    DispatchQueue.main.async {
+      self.emitActivityEvent(eventMap)
+    }
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -470,10 +513,11 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     let appGroupId = UserDefaults.standard.string(forKey: StorageKey.sharedContainerId)
     let shared = sharedDefaults()
     pluginLog.info("📱 persist key=\(key) — appGroupId=\(appGroupId ?? "NOT SET") — sharedDefaults available=\(shared != nil)")
-    if let value {
-      UserDefaults.standard.set(value, forKey: key)
+
+    if let sanitizedValue = value.flatMap({ sanitize($0) }) {
+      UserDefaults.standard.set(sanitizedValue, forKey: key)
       if let shared {
-        shared.set(value, forKey: key)
+        shared.set(sanitizedValue, forKey: key)
         shared.synchronize()
         pluginLog.info("📱 ✅ Written to App Group for key=\(key)")
       } else {
@@ -483,6 +527,25 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       UserDefaults.standard.removeObject(forKey: key)
       sharedDefaults()?.removeObject(forKey: key)
     }
+  }
+
+  private func sanitize(_ value: Any) -> Any? {
+    if value is NSNull {
+      return nil
+    }
+    if let dict = value as? [String: Any] {
+      var sanitized = [String: Any]()
+      for (k, v) in dict {
+        if let sv = sanitize(v) {
+          sanitized[k] = sv
+        }
+      }
+      return sanitized
+    }
+    if let array = value as? [Any] {
+      return array.compactMap { sanitize($0) }
+    }
+    return value
   }
 
   private func storedValue(forKey key: String) -> Any? {
@@ -506,6 +569,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       StorageKey.blockedPackages,
       StorageKey.blockedSelection,
       StorageKey.blockingEnabled,
+      StorageKey.activitySchedule,
     ].forEach { key in
       if let value = UserDefaults.standard.object(forKey: key) {
         sharedDefaults.set(value, forKey: key)
@@ -548,14 +612,19 @@ extension FlutterScreentimePlugin {
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
+    pluginLog.info("📱 application(open:) called with URL: \(url.absoluteString)")
+    
     guard url.scheme == "flutter-screentime",
           url.host == "shield-action",
           let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
           let buttonParam = components.queryItems?.first(where: { $0.name == "button" })?.value
     else {
+      pluginLog.warning("📱 URL didn't match expected pattern (scheme=flutter-screentime, host=shield-action)")
       return false
     }
+    
     let action = buttonParam == "primary" ? "primaryButton" : "secondaryButton"
+    pluginLog.info("📱 Emitting ShieldAction: \(action)")
     emitShieldAction(action)
     return true
   }
