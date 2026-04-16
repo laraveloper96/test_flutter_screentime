@@ -173,7 +173,18 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Solicitud de Permiso')),
+      appBar: AppBar(
+        title: const Text('Solicitud de Permiso'),
+        actions: [
+          Tooltip(
+            message: 'Simular solicitud (solo debug)',
+            child: IconButton(
+              icon: const Icon(Icons.bug_report_outlined),
+              onPressed: _onPermissionRequest,
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -278,6 +289,7 @@ class _PermissionBottomSheet extends StatelessWidget {
   final VoidCallback onDeny;
 
   static const _durations = [
+    (label: '30 seg', value: Duration(seconds: 30)),
     (label: '5 min', value: Duration(minutes: 5)),
     (label: '15 min', value: Duration(minutes: 15)),
     (label: '30 min', value: Duration(minutes: 30)),

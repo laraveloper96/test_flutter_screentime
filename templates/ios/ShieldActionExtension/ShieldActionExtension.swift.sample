@@ -1,10 +1,5 @@
 // ShieldActionExtension.swift
 // Copia como ShieldActionExtension.swift en tu target de extensión.
-//
-// REQUISITOS:
-//   1. Target "Shield Action Extension" en Xcode
-//   2. App Group compartido con la app principal
-//   3. Family Controls entitlement en ambos targets
 
 import ManagedSettings
 import Foundation
@@ -20,40 +15,29 @@ private let log = Logger(
 
 class ShieldActionExtension: ShieldActionDelegate {
 
-    // MARK: - App bloqueada directamente
-
     override func handle(
         action: ShieldAction,
         for application: ApplicationToken,
         completionHandler: @escaping (ShieldActionResponse) -> Void
     ) {
-        log.info("🛡️ handle(application:) action=\(String(describing: action))")
         respond(to: action, completionHandler: completionHandler)
     }
-
-    // MARK: - Dominio web bloqueado
 
     override func handle(
         action: ShieldAction,
         for webDomain: WebDomainToken,
         completionHandler: @escaping (ShieldActionResponse) -> Void
     ) {
-        log.info("🛡️ handle(webDomain:) action=\(String(describing: action))")
         respond(to: action, completionHandler: completionHandler)
     }
-
-    // MARK: - Categoría bloqueada
 
     override func handle(
         action: ShieldAction,
         for category: ActivityCategoryToken,
         completionHandler: @escaping (ShieldActionResponse) -> Void
     ) {
-        log.info("🛡️ handle(category:) action=\(String(describing: action))")
         respond(to: action, completionHandler: completionHandler)
     }
-
-    // MARK: - Lógica compartida
 
     private func respond(
         to action: ShieldAction,
@@ -61,32 +45,35 @@ class ShieldActionExtension: ShieldActionDelegate {
     ) {
         switch action {
         case .primaryButtonPressed:
-            // Escribe el evento en el App Group y notifica a la app principal.
-            // El plugin escucha la Darwin notification y emite al stream
-            // onShieldAction() → onPermissionRequest() en Flutter.
-            // El shield se mantiene visible hasta que el padre apruebe.
-            postShieldAction("primaryButton")
-            log.info("🛡️ PRIMARY → event written + Darwin notification + .defer")
-            completionHandler(.defer)
-
+            openMainApp(completionHandler: completionHandler)
         case .secondaryButtonPressed:
-            log.info("🛡️ SECONDARY → .close")
             completionHandler(.close)
-
         @unknown default:
-            log.warning("🛡️ @unknown default → .close")
             completionHandler(.close)
         }
     }
 
-    private func postShieldAction(_ button: String) {
-        guard let defaults = UserDefaults(suiteName: kAppGroupID) else {
-            log.error("🛡️ ❌ No se puede acceder al App Group: \(kAppGroupID)")
+    private func openMainApp(completionHandler: @escaping (ShieldActionResponse) -> Void) {
+        guard let url = URL(string: "flutter-screentime://shield-action?button=primary") else {
+            postShieldActionFallback()
+            completionHandler(.defer)
             return
         }
-        defaults.set(button, forKey: "flutter_screentime.pendingShieldAction")
+
+        // extensionContext?.open abre la app principal directamente.
+        // Si no está soportado en este contexto, el fallback usa Darwin notification.
+        extensionContext?.open(url, completionHandler: { [weak self] success in
+            if !success {
+                self?.postShieldActionFallback()
+            }
+            completionHandler(.defer)
+        })
+    }
+
+    private func postShieldActionFallback() {
+        guard let defaults = UserDefaults(suiteName: kAppGroupID) else { return }
+        defaults.set("primaryButton", forKey: "flutter_screentime.pendingShieldAction")
         defaults.synchronize()
-        log.info("🛡️ ✅ Evento '\(button)' escrito en App Group")
 
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(
@@ -94,52 +81,5 @@ class ShieldActionExtension: ShieldActionDelegate {
             CFNotificationName(kNotification as CFString),
             nil, nil, true
         )
-        log.info("🛡️ Darwin notification posted: \(kNotification)")
     }
 }
-
-/*
- ─────────────────────────────────────────────────────────────────────────────
- ARQUITECTURA DE COMUNICACIÓN
- ─────────────────────────────────────────────────────────────────────────────
-
- ShieldActionResponse NO tiene .open(url). La comunicación se hace igual
- que DeviceActivityMonitorExtension: App Group + Darwin notification.
-
-  [Shield] ──(primario "Pedir permiso")──▶ postShieldAction("primaryButton")
-                                               │
-                                     App Group UserDefaults
-                                     + Darwin notification
-                                     "dev.iori.flutter_screentime.shield_action"
-                                               │
-                                          FlutterScreentimePlugin
-                                          handleShieldActionNotification()
-                                               │
-                                          emitShieldAction("primaryButton")
-                                               │
-                                     onShieldAction() → primaryButton
-                                     onPermissionRequest() → void
-                                               │
-                                     Flutter muestra pantalla de aprobación
-                                               │
-                                    [Padre aprueba N minutos]
-                                               │
-                                     grantTemporaryAccess(Duration(minutes: N))
-                                     → store.clearAllSettings()  (shield desaparece)
-                                     → reactiva automáticamente al vencer
-
-  [Shield] ──(secundario "Cancelar")──▶ .close  (shield se cierra)
-
- ─────────────────────────────────────────────────────────────────────────────
- NOTAS IMPORTANTES
- ─────────────────────────────────────────────────────────────────────────────
-
- • .defer mantiene el shield visible hasta que la app llame stopBlocking()
-   o grantTemporaryAccess(). Es el comportamiento correcto para "Pedir permiso".
-
- • .close cierra el shield y permite acceso al recurso bloqueado.
-   Usar para "Cancelar" (el usuario decide no pedir permiso).
-
- • ShieldActionResponse NO tiene .open(url) — usar Darwin notifications
-   para comunicar con la app principal.
-*/

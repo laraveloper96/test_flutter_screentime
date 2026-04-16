@@ -4,6 +4,7 @@ import Flutter
 import ManagedSettings
 import SwiftUI
 import UIKit
+import UserNotifications
 import os
 
 private let pluginLog = Logger(
@@ -86,6 +87,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
   private let store = ManagedSettingsStore()
   fileprivate let shieldActionHandler = ShieldActionStreamHandler()
   fileprivate let activityEventHandler = ActivityEventStreamHandler()
+  private var pendingShieldAction: String?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
@@ -174,11 +176,87 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       return
     }
     pluginLog.info("📱 ShieldAction pending action: \(button)")
-    shared.removeObject(forKey: "flutter_screentime.pendingShieldAction")
-    shared.synchronize()
+    // No eliminamos del App Group todavía — lo hace applicationDidBecomeActive
+    // para cubrir el caso en que el emit se pierda con el app en background.
+    pendingShieldAction = button
 
     DispatchQueue.main.async {
-      self.emitShieldAction(button)
+      self.emitOrStoreShieldAction(button)
+    }
+
+    // Notificación local para traer la app al primer plano automáticamente
+    scheduleShieldActionNotification()
+  }
+
+  private func emitOrStoreShieldAction(_ button: String) {
+    if shieldActionHandler.eventSink != nil {
+      pluginLog.info("📱 Sink activo — emitiendo ShieldAction: \(button)")
+      emitShieldAction(button)
+      // Limpia: ya fue procesado
+      pendingShieldAction = nil
+      sharedDefaults()?.removeObject(forKey: "flutter_screentime.pendingShieldAction")
+      sharedDefaults()?.synchronize()
+    } else {
+      pluginLog.info("📱 Sin sink activo — ShieldAction guardado para foreground: \(button)")
+    }
+  }
+
+  private func scheduleShieldActionNotification() {
+    UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+      guard let self else { return }
+      switch settings.authorizationStatus {
+      case .authorized, .provisional:
+        self.fireShieldActionLocalNotification()
+      case .notDetermined:
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+          if granted { self.fireShieldActionLocalNotification() }
+        }
+      default:
+        pluginLog.warning("📱 Notificaciones no autorizadas — no se puede mostrar alerta de permiso")
+      }
+    }
+  }
+
+  private func fireShieldActionLocalNotification() {
+    let content = UNMutableNotificationContent()
+    content.title = "Solicitud de permiso"
+    content.body  = "Tu hijo quiere acceder a una app bloqueada."
+    content.sound = .default
+    content.userInfo = ["shield_action": "primaryButton"]
+
+    let request = UNNotificationRequest(
+      identifier: "flutter_screentime.shield_action",
+      content: content,
+      trigger: nil  // sin trigger = entrega inmediata
+    )
+    UNUserNotificationCenter.current().add(request) { error in
+      if let error {
+        pluginLog.error("📱 Error enviando notificación local: \(error.localizedDescription)")
+      } else {
+        pluginLog.info("📱 Notificación local enviada")
+      }
+    }
+  }
+
+  /// Llamado cuando la app vuelve al foreground.
+  /// Emite cualquier ShieldAction pendiente que no pudo procesarse en background.
+  public func applicationDidBecomeActive(_ application: UIApplication) {
+    pluginLog.info("📱 applicationDidBecomeActive — verificando ShieldAction pendiente")
+    // Cancelar la notificación local si el usuario ya está en la app
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["flutter_screentime.shield_action"])
+    UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["flutter_screentime.shield_action"])
+
+    guard let action = pendingShieldAction else { return }
+    pluginLog.info("📱 ShieldAction pendiente encontrado al volver al foreground: \(action)")
+
+    // Pequeño delay para que Flutter tenga tiempo de reconectar los streams
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+      guard let self else { return }
+      self.pendingShieldAction = nil
+      self.sharedDefaults()?.removeObject(forKey: "flutter_screentime.pendingShieldAction")
+      self.sharedDefaults()?.synchronize()
+      self.emitShieldAction(action)
+      pluginLog.info("📱 ShieldAction emitido desde foreground: \(action)")
     }
   }
 
@@ -211,6 +289,9 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     case "stopBlocking":
       persist(false, forKey: StorageKey.blockingEnabled)
       store.clearAllSettings()
+      if #available(iOS 16.0, *) {
+        DeviceActivityCenter().stopMonitoring([DeviceActivityName("flutter_screentime.temporary_access")])
+      }
       result(nil)
     case "grantTemporaryAccess":
       guard let seconds = call.arguments as? Int, seconds > 0 else {
@@ -421,19 +502,66 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     store.clearAllSettings()
     result(nil)
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(seconds)) { [weak self] in
-      guard let self else { return }
-      let isEnabled = self.storedValue(forKey: StorageKey.blockingEnabled) as? Bool ?? false
-      guard isEnabled else {
-        pluginLog.info("📱 grantTemporaryAccess: bloqueo fue desactivado manualmente, no se reactiva")
-        return
+    if #available(iOS 16.0, *) {
+      scheduleReblock(afterSeconds: seconds)
+    } else {
+      // Fallback para iOS < 16: timer en memoria (muere si la app es cerrada)
+      DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(seconds)) { [weak self] in
+        guard let self else { return }
+        let isEnabled = self.storedValue(forKey: StorageKey.blockingEnabled) as? Bool ?? false
+        guard isEnabled else {
+          pluginLog.info("📱 grantTemporaryAccess: bloqueo desactivado manualmente, no se reactiva")
+          return
+        }
+        pluginLog.info("📱 grantTemporaryAccess: reactivando bloqueo (fallback) después de \(seconds) segundos")
+        let selection = self.storedSelection()
+        self.store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
+        self.store.shield.applicationCategories = selection.categoryTokens.isEmpty
+          ? nil
+          : ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
       }
-      pluginLog.info("📱 grantTemporaryAccess: reactivando bloqueo después de \(seconds) segundos")
-      let selection = self.storedSelection()
-      self.store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
-      self.store.shield.applicationCategories = selection.categoryTokens.isEmpty
-        ? nil
-        : ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
+    }
+  }
+
+  @available(iOS 16.0, *)
+  private func scheduleReblock(afterSeconds seconds: Int) {
+    let center = DeviceActivityCenter()
+    // Cancela cualquier acceso temporal anterior que siga activo
+    center.stopMonitoring([DeviceActivityName("flutter_screentime.temporary_access")])
+
+    let now = Date()
+    let endDate = now.addingTimeInterval(TimeInterval(seconds))
+    let calendar = Calendar.current
+    let startComponents = calendar.dateComponents([.hour, .minute, .second], from: now)
+    let endComponents   = calendar.dateComponents([.hour, .minute, .second], from: endDate)
+
+    let schedule = DeviceActivitySchedule(
+      intervalStart: startComponents,
+      intervalEnd:   endComponents,
+      repeats:       false,
+      warningTime:   nil
+    )
+
+    do {
+      try center.startMonitoring(
+        DeviceActivityName("flutter_screentime.temporary_access"),
+        during: schedule
+      )
+      pluginLog.info("📱 scheduleReblock: DeviceActivitySchedule activo — endDate=\(endDate)")
+    } catch {
+      pluginLog.error("📱 scheduleReblock: error al programar — \(error.localizedDescription)")
+      // Fallback al timer en memoria si el schedule falla
+      DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(seconds)) { [weak self] in
+        guard let self else { return }
+        let isEnabled = self.storedValue(forKey: StorageKey.blockingEnabled) as? Bool ?? false
+        guard isEnabled else { return }
+        pluginLog.info("📱 scheduleReblock: reactivando bloqueo (fallback post-error) después de \(seconds) segundos")
+        let selection = self.storedSelection()
+        self.store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
+        self.store.shield.applicationCategories = selection.categoryTokens.isEmpty
+          ? nil
+          : ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
+      }
     }
   }
 

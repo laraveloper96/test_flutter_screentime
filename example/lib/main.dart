@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screentime/flutter_screentime.dart';
@@ -45,6 +47,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isInitializing = false;
   String _initStatus = '';
+
+  // Listener global: activo mientras HomeScreen esté montado (toda la vida de la app)
+  StreamSubscription<void>? _permissionSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _startGlobalPermissionListener();
+  }
+
+  @override
+  void dispose() {
+    _permissionSub?.cancel();
+    super.dispose();
+  }
+
+  void _startGlobalPermissionListener() {
+    _permissionSub = _shieldExtension.onPermissionRequest().listen((_) {
+      _navigateToPermissionScreen();
+    });
+  }
+
+  void _simulatePermissionRequest() => _navigateToPermissionScreen();
+
+  void _navigateToPermissionScreen() {
+    final ctx = context;
+    if (!mounted) return;
+    // Si ya hay una PermissionRequestScreen en la pila, no apila otra
+    Navigator.of(ctx).popUntil((route) => route.isFirst);
+    Navigator.of(ctx).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const PermissionRequestScreen(),
+      ),
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Quick Init
@@ -150,6 +187,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('flutter_screentime'),
         centerTitle: true,
+        actions: [
+          Tooltip(
+            message: 'Simular "Pedir permiso" (debug)',
+            child: IconButton(
+              icon: const Icon(Icons.bug_report_outlined),
+              onPressed: _simulatePermissionRequest,
+            ),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

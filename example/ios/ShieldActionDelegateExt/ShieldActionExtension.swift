@@ -12,8 +12,6 @@ private let log = Logger(
 
 class ShieldActionExtension: ShieldActionDelegate {
 
-    // MARK: - App bloqueada directamente
-
     override func handle(
         action: ShieldAction,
         for application: ApplicationToken,
@@ -22,8 +20,6 @@ class ShieldActionExtension: ShieldActionDelegate {
         log.info("🛡️ handle(application:) action=\(String(describing: action))")
         respond(to: action, completionHandler: completionHandler)
     }
-
-    // MARK: - Dominio web bloqueado
 
     override func handle(
         action: ShieldAction,
@@ -34,8 +30,6 @@ class ShieldActionExtension: ShieldActionDelegate {
         respond(to: action, completionHandler: completionHandler)
     }
 
-    // MARK: - Categoría bloqueada
-
     override func handle(
         action: ShieldAction,
         for category: ActivityCategoryToken,
@@ -45,24 +39,21 @@ class ShieldActionExtension: ShieldActionDelegate {
         respond(to: action, completionHandler: completionHandler)
     }
 
-    // MARK: - Lógica compartida
-
     private func respond(
         to action: ShieldAction,
         completionHandler: @escaping (ShieldActionResponse) -> Void
     ) {
         switch action {
         case .primaryButtonPressed:
-            // Escribe el evento en el App Group y notifica a la app principal.
-            // La app principal escucha la Darwin notification, lee el evento
-            // y emite al stream onShieldAction() → onPermissionRequest().
-            // El shield se mantiene visible hasta que el padre apruebe o deniegue.
+            // Apple no expone extensionContext ni ShieldActionResponse.open en este
+            // tipo de extensión. La única vía es App Group + Darwin notification.
+            // La app principal recibe la notificación y muestra una local push
+            // para que el usuario la toque y abra la app.
             postShieldAction("primaryButton")
             log.info("🛡️ PRIMARY → event written + Darwin notification + .defer")
             completionHandler(.defer)
 
         case .secondaryButtonPressed:
-            // Cierra el shield y vuelve a la pantalla anterior.
             log.info("🛡️ SECONDARY → .close")
             completionHandler(.close)
 
@@ -87,6 +78,6 @@ class ShieldActionExtension: ShieldActionDelegate {
             CFNotificationName(kNotification as CFString),
             nil, nil, true
         )
-        log.info("🛡️ Darwin notification posted: \(kNotification)")
+        log.info("🛡️ Darwin notification posted")
     }
 }
