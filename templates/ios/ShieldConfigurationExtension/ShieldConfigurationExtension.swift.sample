@@ -8,19 +8,44 @@ import UIKit
 
 private let kAppGroupID = "group.your.app" // ⚠️ Reemplaza con tu App Group ID
 
-@available(iOS 16.0, *)
-class ShieldConfigurationExtension: ShieldConfigurationDataSource {
+class ShieldConfigDataSource: ShieldConfigurationDataSource {
 
+  // MARK: - Apps individuales bloqueadas directamente
   override func configuration(
     shielding application: Application
   ) -> ShieldConfiguration {
     buildConfiguration()
   }
 
+  // MARK: - Apps bloqueadas por categoría (¡NO omitir! sin esto, se muestra la pantalla por defecto del sistema)
+  override func configuration(
+    shielding application: Application,
+    in category: ActivityCategory
+  ) -> ShieldConfiguration {
+    buildConfiguration()
+  }
+
+  // MARK: - Dominios web bloqueados directamente
+  override func configuration(
+    shielding webDomain: WebDomain
+  ) -> ShieldConfiguration {
+    buildConfiguration()
+  }
+
+  // MARK: - Dominios web bloqueados por categoría
+  override func configuration(
+    shielding webDomain: WebDomain,
+    in category: ActivityCategory
+  ) -> ShieldConfiguration {
+    buildConfiguration()
+  }
+
+  // MARK: - Builder compartido
+
   private func buildConfiguration() -> ShieldConfiguration {
     let defaults = UserDefaults(suiteName: kAppGroupID)
 
-    // Opción A: leer configuración de texto/colores desde App Group
+    // Leer configuración de texto/colores desde App Group
     let config = defaults?.dictionary(forKey: "flutter_screentime.blockScreenConfig")
     let title = config?["title"] as? String
     let subtitle = config?["subtitle"] as? String
@@ -31,7 +56,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
     let bgColorHex = config?["backgroundColorHex"] as? String
     let blurStyleStr = config?["backgroundBlurStyle"] as? String
 
-    // Opción B: intentar cargar ícono PNG personalizado desde App Group
+    // Cargar ícono PNG personalizado desde App Group (opcional)
     var icon: UIImage? = nil
     if let containerURL = FileManager.default.containerURL(
       forSecurityApplicationGroupIdentifier: kAppGroupID
@@ -40,7 +65,6 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
       icon = UIImage(contentsOfFile: iconURL.path)
     }
 
-    // Construir ShieldConfiguration
     let primaryButton: ShieldConfiguration.Label? = primaryLabel.map {
       .init(text: $0, color: UIColor(hex: primaryTextColorHex ?? "#FFFFFF") ?? .white)
     }
@@ -48,11 +72,9 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
       .init(text: $0, color: .secondaryLabel)
     }
 
-    let backgroundColor: UIColor? = UIColor(hex: bgColorHex ?? "#111827")
-
     return ShieldConfiguration(
       backgroundBlurStyle: blurStyle(from: blurStyleStr),
-      backgroundColor: backgroundColor,
+      backgroundColor: UIColor(hex: bgColorHex ?? "#111827"),
       icon: icon,
       title: title.map { .init(text: $0, color: .white) },
       subtitle: subtitle.map { .init(text: $0, color: .lightText) },
