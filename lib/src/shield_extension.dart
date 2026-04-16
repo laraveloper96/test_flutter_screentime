@@ -3,13 +3,15 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'models/screen_time_block_screen_config.dart';
+
+export 'models/screen_time_block_screen_config.dart';
+
 const MethodChannel _channel = MethodChannel('flutter_screentime');
 const EventChannel _shieldActionChannel =
     EventChannel('flutter_screentime/shield_action');
 const EventChannel _activityEventChannel =
     EventChannel('flutter_screentime/activity_event');
-
-enum ShieldBackgroundBlurStyle { dark, light, none }
 
 enum ShieldAction { primaryButton, secondaryButton }
 
@@ -37,38 +39,6 @@ class ActivityEvent {
       ),
     );
   }
-}
-
-class ScreenTimeBlockScreenConfig {
-  const ScreenTimeBlockScreenConfig({
-    this.title,
-    this.subtitle,
-    this.primaryButtonLabel,
-    this.primaryButtonColorHex,
-    this.primaryButtonTextColorHex,
-    this.secondaryButtonLabel,
-    this.backgroundColorHex,
-    this.backgroundBlurStyle,
-  });
-  final String? title;
-  final String? subtitle;
-  final String? primaryButtonLabel;
-  final String? primaryButtonColorHex;
-  final String? primaryButtonTextColorHex;
-  final String? secondaryButtonLabel;
-  final String? backgroundColorHex;
-  final ShieldBackgroundBlurStyle? backgroundBlurStyle;
-
-  Map<String, Object?> toMap() => {
-    'title': title,
-    'subtitle': subtitle,
-    'primaryButtonLabel': primaryButtonLabel,
-    'primaryButtonColorHex': primaryButtonColorHex,
-    'primaryButtonTextColorHex': primaryButtonTextColorHex,
-    'secondaryButtonLabel': secondaryButtonLabel,
-    'backgroundColorHex': backgroundColorHex,
-    'backgroundBlurStyle': backgroundBlurStyle?.name,
-  };
 }
 
 class ShieldExtension {

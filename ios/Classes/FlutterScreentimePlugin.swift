@@ -24,6 +24,7 @@ private enum StorageKey {
 }
 
 private let kActivityEventNotification = "dev.iori.flutter_screentime.activity_event"
+private let kShieldActionNotification   = "dev.iori.flutter_screentime.shield_action"
 
 private final class BlockedAppsPickerModel: ObservableObject {
   @Published var selection: FamilyActivitySelection
@@ -117,12 +118,25 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     CFNotificationCenterAddObserver(
       center,
       observer,
-      { (_, observer, name, _, _) in
+      { (_, observer, _, _, _) in
         guard let observer = observer else { return }
         let plugin = Unmanaged<FlutterScreentimePlugin>.fromOpaque(observer).takeUnretainedValue()
         plugin.handleActivityEventNotification()
       },
       kActivityEventNotification as CFString,
+      nil,
+      .deliverImmediately
+    )
+
+    CFNotificationCenterAddObserver(
+      center,
+      observer,
+      { (_, observer, _, _, _) in
+        guard let observer = observer else { return }
+        let plugin = Unmanaged<FlutterScreentimePlugin>.fromOpaque(observer).takeUnretainedValue()
+        plugin.handleShieldActionNotification()
+      },
+      kShieldActionNotification as CFString,
       nil,
       .deliverImmediately
     )
@@ -146,6 +160,25 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
 
     DispatchQueue.main.async {
       self.emitActivityEvent(eventMap)
+    }
+  }
+
+  private func handleShieldActionNotification() {
+    pluginLog.info("📱 Received Darwin Notification: \(kShieldActionNotification)")
+    guard let shared = sharedDefaults() else {
+      pluginLog.error("📱 ShieldAction notification received but sharedDefaults is nil")
+      return
+    }
+    guard let button = shared.string(forKey: "flutter_screentime.pendingShieldAction") else {
+      pluginLog.warning("📱 ShieldAction notification received but no pending action in App Group")
+      return
+    }
+    pluginLog.info("📱 ShieldAction pending action: \(button)")
+    shared.removeObject(forKey: "flutter_screentime.pendingShieldAction")
+    shared.synchronize()
+
+    DispatchQueue.main.async {
+      self.emitShieldAction(button)
     }
   }
 
@@ -392,10 +425,10 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       guard let self else { return }
       let isEnabled = self.storedValue(forKey: StorageKey.blockingEnabled) as? Bool ?? false
       guard isEnabled else {
-        self.pluginLog.info("📱 grantTemporaryAccess: bloqueo fue desactivado manualmente, no se reactiva")
+        pluginLog.info("📱 grantTemporaryAccess: bloqueo fue desactivado manualmente, no se reactiva")
         return
       }
-      self.pluginLog.info("📱 grantTemporaryAccess: reactivando bloqueo después de \(seconds) segundos")
+      pluginLog.info("📱 grantTemporaryAccess: reactivando bloqueo después de \(seconds) segundos")
       let selection = self.storedSelection()
       self.store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
       self.store.shield.applicationCategories = selection.categoryTokens.isEmpty
@@ -639,6 +672,7 @@ extension FlutterScreentimePlugin {
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
+    pluginLog.info("📱 ✅ application(open:) REACHED — url=\(url.absoluteString)")
     pluginLog.info("📱 application(open:) called with URL: \(url.absoluteString)")
     
     guard url.scheme == "flutter-screentime",

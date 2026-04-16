@@ -9,10 +9,4 @@ export 'src/models/activity_event.dart';
 export 'src/family_controls.dart';
 export 'src/managed_settings.dart';
 export 'src/device_activity.dart' hide ScreenTimeSchedule;
-export 'src/shield_extension.dart'
-    hide
-        ShieldBackgroundBlurStyle,
-        ShieldAction,
-        ActivityEventType,
-        ActivityEvent,
-        ScreenTimeBlockScreenConfig;
+export 'src/shield_extension.dart' hide ShieldAction, ActivityEventType, ActivityEvent;

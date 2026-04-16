@@ -11,6 +11,8 @@
 		2665099A2F8F3053001B58CB /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 266509992F8F3053001B58CB /* ManagedSettings.framework */; };
 		2665099C2F8F3053001B58CB /* ManagedSettingsUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2665099B2F8F3053001B58CB /* ManagedSettingsUI.framework */; };
 		266509A42F8F3053001B58CB /* ShieldConfigurationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 266509982F8F3053001B58CB /* ShieldConfigurationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		26E3B0E72F90AB70008DAF9D /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 266509992F8F3053001B58CB /* ManagedSettings.framework */; };
+		26E3B0EF2F90AB70008DAF9D /* ShieldActionDelegateExt.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 26E3B0E62F90AB70008DAF9D /* ShieldActionDelegateExt.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		5725CBAFD7965D9AF294F22A /* Pods_ShieldConfigurationExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88A7B6FCFFE6D844926ACE9A /* Pods_ShieldConfigurationExtension.framework */; };
@@ -31,6 +33,13 @@
 			remoteGlobalIDString = 266509972F8F3053001B58CB;
 			remoteInfo = ShieldConfigurationExtension;
 		};
+		26E3B0ED2F90AB70008DAF9D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26E3B0E52F90AB70008DAF9D;
+			remoteInfo = ShieldActionDelegateExt;
+		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -47,6 +56,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				26E3B0EF2F90AB70008DAF9D /* ShieldActionDelegateExt.appex in Embed Foundation Extensions */,
 				266509A42F8F3053001B58CB /* ShieldConfigurationExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -73,6 +83,7 @@
 		266509982F8F3053001B58CB /* ShieldConfigurationExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShieldConfigurationExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		266509992F8F3053001B58CB /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
 		2665099B2F8F3053001B58CB /* ManagedSettingsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettingsUI.framework; path = System/Library/Frameworks/ManagedSettingsUI.framework; sourceTree = SDKROOT; };
+		26E3B0E62F90AB70008DAF9D /* ShieldActionDelegateExt.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShieldActionDelegateExt.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B2E152C7C59FE2ED179CA18 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -107,6 +118,13 @@
 			);
 			target = 266509972F8F3053001B58CB /* ShieldConfigurationExtension */;
 		};
+		26E3B0F32F90AB70008DAF9D /* Exceptions for "ShieldActionDelegateExt" folder in "ShieldActionDelegateExt" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 26E3B0E52F90AB70008DAF9D /* ShieldActionDelegateExt */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -122,6 +140,18 @@
 			path = ShieldConfigurationExtension;
 			sourceTree = "<group>";
 		};
+		26E3B0E82F90AB70008DAF9D /* ShieldActionDelegateExt */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				26E3B0F32F90AB70008DAF9D /* Exceptions for "ShieldActionDelegateExt" folder in "ShieldActionDelegateExt" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = ShieldActionDelegateExt;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -132,6 +162,14 @@
 				2665099A2F8F3053001B58CB /* ManagedSettings.framework in Frameworks */,
 				2665099C2F8F3053001B58CB /* ManagedSettingsUI.framework in Frameworks */,
 				5725CBAFD7965D9AF294F22A /* Pods_ShieldConfigurationExtension.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		26E3B0E32F90AB70008DAF9D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				26E3B0E72F90AB70008DAF9D /* ManagedSettings.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -207,6 +245,7 @@
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				2665099D2F8F3053001B58CB /* ShieldConfigurationExtension */,
+				26E3B0E82F90AB70008DAF9D /* ShieldActionDelegateExt */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				18A757C06920B6BE6C508DC7 /* Pods */,
@@ -220,6 +259,7 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 				266509982F8F3053001B58CB /* ShieldConfigurationExtension.appex */,
+				26E3B0E62F90AB70008DAF9D /* ShieldActionDelegateExt.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -265,6 +305,26 @@
 			productReference = 266509982F8F3053001B58CB /* ShieldConfigurationExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		26E3B0E52F90AB70008DAF9D /* ShieldActionDelegateExt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 26E3B0F42F90AB70008DAF9D /* Build configuration list for PBXNativeTarget "ShieldActionDelegateExt" */;
+			buildPhases = (
+				26E3B0E22F90AB70008DAF9D /* Sources */,
+				26E3B0E32F90AB70008DAF9D /* Frameworks */,
+				26E3B0E42F90AB70008DAF9D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				26E3B0E82F90AB70008DAF9D /* ShieldActionDelegateExt */,
+			);
+			name = ShieldActionDelegateExt;
+			productName = ShieldActionDelegateExt;
+			productReference = 26E3B0E62F90AB70008DAF9D /* ShieldActionDelegateExt.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -302,6 +362,7 @@
 			);
 			dependencies = (
 				266509A32F8F3053001B58CB /* PBXTargetDependency */,
+				26E3B0EE2F90AB70008DAF9D /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -320,6 +381,9 @@
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
 					266509972F8F3053001B58CB = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					26E3B0E52F90AB70008DAF9D = {
 						CreatedOnToolsVersion = 16.4;
 					};
 					331C8080294A63A400263BE5 = {
@@ -353,12 +417,20 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				266509972F8F3053001B58CB /* ShieldConfigurationExtension */,
+				26E3B0E52F90AB70008DAF9D /* ShieldActionDelegateExt */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		266509962F8F3053001B58CB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		26E3B0E42F90AB70008DAF9D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -493,11 +565,11 @@
 			files = (
 			);
 			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-			);
-			outputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -508,6 +580,13 @@
 
 /* Begin PBXSourcesBuildPhase section */
 		266509942F8F3053001B58CB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		26E3B0E22F90AB70008DAF9D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -539,6 +618,11 @@
 			isa = PBXTargetDependency;
 			target = 266509972F8F3053001B58CB /* ShieldConfigurationExtension */;
 			targetProxy = 266509A22F8F3053001B58CB /* PBXContainerItemProxy */;
+		};
+		26E3B0EE2F90AB70008DAF9D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 26E3B0E52F90AB70008DAF9D /* ShieldActionDelegateExt */;
+			targetProxy = 26E3B0ED2F90AB70008DAF9D /* PBXContainerItemProxy */;
 		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -742,6 +826,120 @@
 				MARKETING_VERSION = 1.0;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ssssstudios.time4kids.ShieldConfigurationExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Profile;
+		};
+		26E3B0F02F90AB70008DAF9D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = ShieldActionDelegateExt/ShieldActionDelegateExt.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A292KDP7M;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShieldActionDelegateExt/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShieldActionDelegateExt;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ssssstudios.time4kids.ShieldActionDelegateExt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		26E3B0F12F90AB70008DAF9D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = ShieldActionDelegateExt/ShieldActionDelegateExt.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A292KDP7M;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShieldActionDelegateExt/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShieldActionDelegateExt;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ssssstudios.time4kids.ShieldActionDelegateExt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		26E3B0F22F90AB70008DAF9D /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = ShieldActionDelegateExt/ShieldActionDelegateExt.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A292KDP7M;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShieldActionDelegateExt/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShieldActionDelegateExt;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ssssstudios.time4kids.ShieldActionDelegateExt;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -970,6 +1168,16 @@
 				266509A62F8F3053001B58CB /* Debug */,
 				266509A72F8F3053001B58CB /* Release */,
 				266509A82F8F3053001B58CB /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		26E3B0F42F90AB70008DAF9D /* Build configuration list for PBXNativeTarget "ShieldActionDelegateExt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				26E3B0F02F90AB70008DAF9D /* Debug */,
+				26E3B0F12F90AB70008DAF9D /* Release */,
+				26E3B0F22F90AB70008DAF9D /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

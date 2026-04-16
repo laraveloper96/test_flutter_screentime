@@ -3,33 +3,53 @@
 //
 // REQUISITOS:
 //   1. Target "Shield Action Extension" en Xcode
-//   2. URL scheme "flutter-screentime" registrado en la app principal
-//      (Runner > Info > URL Types: identifier=flutter-screentime, scheme=flutter-screentime)
-//   3. App Group compartido con la app principal
+//   2. App Group compartido con la app principal
+//   3. Family Controls entitlement en ambos targets
 
 import ManagedSettings
+import Foundation
+import os
 
-private let kAppGroupID = "group.your.app" // ⚠️ Reemplaza con tu App Group ID
+private let kAppGroupID   = "group.your.app" // ⚠️ Reemplaza con tu App Group ID
+private let kNotification = "dev.iori.flutter_screentime.shield_action"
+
+private let log = Logger(
+    subsystem: "com.your.app.ShieldActionExt",
+    category: "ShieldAction"
+)
 
 class ShieldActionExtension: ShieldActionDelegate {
 
-    // MARK: - App individual bloqueada
+    // MARK: - App bloqueada directamente
 
     override func handle(
-        _ action: ShieldAction,
-        for application: Application,
+        action: ShieldAction,
+        for application: ApplicationToken,
         completionHandler: @escaping (ShieldActionResponse) -> Void
     ) {
+        log.info("🛡️ handle(application:) action=\(String(describing: action))")
         respond(to: action, completionHandler: completionHandler)
     }
 
-    // MARK: - App bloqueada por categoría
+    // MARK: - Dominio web bloqueado
 
     override func handle(
-        _ action: ShieldAction,
-        for applicationCategory: ApplicationCategory,
+        action: ShieldAction,
+        for webDomain: WebDomainToken,
         completionHandler: @escaping (ShieldActionResponse) -> Void
     ) {
+        log.info("🛡️ handle(webDomain:) action=\(String(describing: action))")
+        respond(to: action, completionHandler: completionHandler)
+    }
+
+    // MARK: - Categoría bloqueada
+
+    override func handle(
+        action: ShieldAction,
+        for category: ActivityCategoryToken,
+        completionHandler: @escaping (ShieldActionResponse) -> Void
+    ) {
+        log.info("🛡️ handle(category:) action=\(String(describing: action))")
         respond(to: action, completionHandler: completionHandler)
     }
 
@@ -40,72 +60,86 @@ class ShieldActionExtension: ShieldActionDelegate {
         completionHandler: @escaping (ShieldActionResponse) -> Void
     ) {
         switch action {
-        case .primaryButton:
-            // Abre la app principal con deep link → el plugin emitirá ShieldAction.primaryButton
-            // Caso de uso: el usuario pulsa "Pedir permiso" y la app abre la pantalla de solicitud
-            let url = URL(string: "flutter-screentime://shield-action?button=primary")!
-            completionHandler(.open(url))
+        case .primaryButtonPressed:
+            // Escribe el evento en el App Group y notifica a la app principal.
+            // El plugin escucha la Darwin notification y emite al stream
+            // onShieldAction() → onPermissionRequest() en Flutter.
+            // El shield se mantiene visible hasta que el padre apruebe.
+            postShieldAction("primaryButton")
+            log.info("🛡️ PRIMARY → event written + Darwin notification + .defer")
+            completionHandler(.defer)
 
-        case .secondaryButton:
-            // Cierra el shield sin abrir nada
-            // Caso de uso: el usuario pulsa "Cancelar" y vuelve a la pantalla anterior
+        case .secondaryButtonPressed:
+            log.info("🛡️ SECONDARY → .close")
             completionHandler(.close)
 
         @unknown default:
+            log.warning("🛡️ @unknown default → .close")
             completionHandler(.close)
         }
+    }
+
+    private func postShieldAction(_ button: String) {
+        guard let defaults = UserDefaults(suiteName: kAppGroupID) else {
+            log.error("🛡️ ❌ No se puede acceder al App Group: \(kAppGroupID)")
+            return
+        }
+        defaults.set(button, forKey: "flutter_screentime.pendingShieldAction")
+        defaults.synchronize()
+        log.info("🛡️ ✅ Evento '\(button)' escrito en App Group")
+
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterPostNotification(
+            center,
+            CFNotificationName(kNotification as CFString),
+            nil, nil, true
+        )
+        log.info("🛡️ Darwin notification posted: \(kNotification)")
     }
 }
 
 /*
  ─────────────────────────────────────────────────────────────────────────────
- CONFIGURACIÓN EN XCODE (pasos obligatorios)
+ ARQUITECTURA DE COMUNICACIÓN
  ─────────────────────────────────────────────────────────────────────────────
 
- 1. URL Scheme en la app principal
-    Runner > Info > URL Types > (+)
-      Identifier : flutter-screentime
-      URL Schemes: flutter-screentime
+ ShieldActionResponse NO tiene .open(url). La comunicación se hace igual
+ que DeviceActivityMonitorExtension: App Group + Darwin notification.
 
- 2. App Group en ambos targets
-    Runner                   > Signing & Capabilities > App Groups > group.your.app
-    ShieldActionExtension    > Signing & Capabilities > App Groups > group.your.app
+  [Shield] ──(primario "Pedir permiso")──▶ postShieldAction("primaryButton")
+                                               │
+                                     App Group UserDefaults
+                                     + Darwin notification
+                                     "dev.iori.flutter_screentime.shield_action"
+                                               │
+                                          FlutterScreentimePlugin
+                                          handleShieldActionNotification()
+                                               │
+                                          emitShieldAction("primaryButton")
+                                               │
+                                     onShieldAction() → primaryButton
+                                     onPermissionRequest() → void
+                                               │
+                                     Flutter muestra pantalla de aprobación
+                                               │
+                                    [Padre aprueba N minutos]
+                                               │
+                                     grantTemporaryAccess(Duration(minutes: N))
+                                     → store.clearAllSettings()  (shield desaparece)
+                                     → reactiva automáticamente al vencer
 
- 3. Entitlement Family Controls en Runner
-    Runner > Signing & Capabilities > Family Controls   (activado)
-
- ─────────────────────────────────────────────────────────────────────────────
- FLUJO COMPLETO
- ─────────────────────────────────────────────────────────────────────────────
-
-  [Shield] ──(primario)──▶ .open("flutter-screentime://shield-action?button=primary")
-                               │
-                               └──▶ AppDelegate ──▶ FlutterScreentimePlugin
-                                        │
-                                   onShieldAction()  →  ShieldAction.primaryButton
-                                   onPermissionRequest() (alias filtrado)
-                                        │
-                                   Flutter muestra pantalla "Pedir permiso"
-                                        │
-                              [Aprobar N minutos]
-                                        │
-                               grantTemporaryAccess(duration: Duration(minutes: 5))
-                                        │
-                                   Bloqueo desactivado N min → reactiva automáticamente
-
-  [Shield] ──(secundario)──▶ .close   (shield se cierra, app bloqueada no se abre)
+  [Shield] ──(secundario "Cancelar")──▶ .close  (shield se cierra)
 
  ─────────────────────────────────────────────────────────────────────────────
- USO EN FLUTTER
+ NOTAS IMPORTANTES
  ─────────────────────────────────────────────────────────────────────────────
 
-  final shield = ShieldExtension();
+ • .defer mantiene el shield visible hasta que la app llame stopBlocking()
+   o grantTemporaryAccess(). Es el comportamiento correcto para "Pedir permiso".
 
-  // Escuchar solicitud de permiso (solo botón primario)
-  shield.onPermissionRequest().listen((_) {
-    showPermissionDialog();
-  });
+ • .close cierra el shield y permite acceso al recurso bloqueado.
+   Usar para "Cancelar" (el usuario decide no pedir permiso).
 
-  // Al aprobar:
-  await shield.grantTemporaryAccess(duration: Duration(minutes: 5));
+ • ShieldActionResponse NO tiene .open(url) — usar Darwin notifications
+   para comunicar con la app principal.
 */
