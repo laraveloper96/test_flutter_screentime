@@ -13,6 +13,12 @@ class FamilyControls {
     return ScreenTimeAuthorizationStatus.fromPlatformValue(status);
   }
 
+  Future<bool> requestNotificationPermission() async {
+    final result =
+        await _channel.invokeMethod<bool>('requestNotificationPermission');
+    return result ?? false;
+  }
+
   Future<ScreenTimeAuthorizationStatus> requestAuthorization() async {
     final status = await _channel.invokeMethod<String>('requestAuthorization');
     return ScreenTimeAuthorizationStatus.fromPlatformValue(status);

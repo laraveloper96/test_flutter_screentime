@@ -28,7 +28,7 @@ var globalMethodCall = ""
                 do {
                     if #available(iOS 16.0, *) {
                         print("try requestAuthorization")
-                        try await AuthorizationCenter.shared.requestAuthorization(for: FamilyControlsMember.individual)
+                        try await AuthorizationCenter.shared.requestAuthorization(for: FamilyControlsMember.child)
                         print("requestAuthorization success")
                         switch AuthorizationCenter.shared.authorizationStatus {
                         case .notDetermined:

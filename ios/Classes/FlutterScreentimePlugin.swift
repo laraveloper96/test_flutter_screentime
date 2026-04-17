@@ -114,6 +114,10 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
   }
 
   private func setupNotificationObservers() {
+    if UNUserNotificationCenter.current().delegate == nil {
+      UNUserNotificationCenter.current().delegate = self
+    }
+
     let center = CFNotificationCenterGetDarwinNotifyCenter()
     let observer = Unmanaged.passUnretained(self).toOpaque()
 
@@ -268,6 +272,8 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       result(currentAuthorizationStatus())
     case "requestAuthorization":
       requestAuthorization(result: result)
+    case "requestNotificationPermission":
+      requestNotificationPermission(result: result)
     case "revokeAuthorization":
       revokeAuthorization(result: result)
     case "selectBlockedApps":
@@ -370,7 +376,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
   private func requestAuthorization(result: @escaping FlutterResult) {
     Task { @MainActor in
       do {
-        try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+        try await AuthorizationCenter.shared.requestAuthorization(for: .child)
         result(self.currentAuthorizationStatus())
       } catch {
         result(FlutterError(
@@ -378,6 +384,16 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
           message: error.localizedDescription,
           details: nil
         ))
+      }
+    }
+  }
+
+  private func requestNotificationPermission(result: @escaping FlutterResult) {
+    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+      if let error = error {
+        result(FlutterError(code: "notification_permission_failed", message: error.localizedDescription, details: nil))
+      } else {
+        result(granted)
       }
     }
   }
@@ -816,5 +832,16 @@ extension FlutterScreentimePlugin {
     pluginLog.info("📱 Emitting ShieldAction: \(action)")
     emitShieldAction(action)
     return true
+  }
+}
+
+// MARK: - Local Notification Foreground Delegate
+extension FlutterScreentimePlugin: UNUserNotificationCenterDelegate {
+  public func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .list, .sound, .badge])
+    } else {
+      completionHandler([.alert, .sound, .badge])
+    }
   }
 }

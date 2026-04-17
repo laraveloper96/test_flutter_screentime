@@ -120,12 +120,23 @@ class _HomeScreenState extends State<HomeScreen> {
         _setStatus('Solicitando autorización FamilyControls…');
         authStatus = await _familyControls.requestAuthorization();
         if (authStatus != ScreenTimeAuthorizationStatus.approved) {
-          _showError('Autorización denegada. Actívala en Ajustes > Tiempo en Pantalla.');
+          _showError(
+              'Autorización denegada. Actívala en Ajustes > Tiempo en Pantalla.');
           return;
         }
       }
 
-      // Paso 4 — Seleccionar apps (abre el picker del sistema)
+      // Paso 4 — Autorización de notificaciones (si no está aprobada)
+      _setStatus('Verificando autorización de notificaciones…');
+      final notificationAuth =
+          await _familyControls.requestNotificationPermission();
+      if (!notificationAuth) {
+        _showError(
+            'Autorización de notificaciones denegada. Actívala en Ajustes > Notificaciones.');
+        return;
+      }
+
+      // Paso 5 — Seleccionar apps (abre el picker del sistema)
       _setStatus('Abriendo selector de apps…');
       final summary = await _familyControls.selectBlockedApps();
 
@@ -134,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      // Paso 5 — Iniciar bloqueo
+      // Paso 6 — Iniciar bloqueo
       _setStatus('Iniciando bloqueo…');
       await _managedSettings.startBlocking();
 
