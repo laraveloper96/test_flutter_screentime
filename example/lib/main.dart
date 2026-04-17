@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screentime/flutter_screentime.dart';
 
+import 'screens/app_removal_screen.dart';
 import 'screens/device_activity_screen.dart';
 import 'screens/family_controls_screen.dart';
 import 'screens/managed_settings_screen.dart';
@@ -154,6 +155,11 @@ class _HomeScreenState extends State<HomeScreen> {
         '${summary.categoryCount} categoría(s) bloqueadas.',
         success: true,
       );
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const AppRemovalScreen(),
+        ),
+      );
     } on PlatformException catch (e) {
       _showError(e.message ?? e.code);
     } catch (e) {
@@ -293,6 +299,18 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute<void>(
                 builder: (_) => const PermissionRequestScreen(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _MenuCard(
+            title: 'Protección de desinstalación',
+            subtitle: 'PIN parental para bloquear/permitir desinstalación',
+            icon: Icons.delete_forever,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const AppRemovalScreen(),
               ),
             ),
           ),

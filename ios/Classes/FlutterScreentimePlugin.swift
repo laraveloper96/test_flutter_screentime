@@ -271,7 +271,8 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     case "checkAuthorization":
       result(currentAuthorizationStatus())
     case "requestAuthorization":
-      requestAuthorization(result: result)
+      let memberType = call.arguments as? String ?? "child"
+      requestAuthorization(memberType: memberType, result: result)
     case "requestNotificationPermission":
       requestNotificationPermission(result: result)
     case "revokeAuthorization":
@@ -308,6 +309,13 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     case "getBlockingStatus":
       let isEnabled = storedValue(forKey: StorageKey.blockingEnabled) as? Bool ?? false
       result(isEnabled)
+    case "setDenyAppRemoval":
+      guard let deny = call.arguments as? Bool else {
+        result(FlutterError(code: "invalid_args", message: "Expected a boolean value.", details: nil))
+        return
+      }
+      store.application.denyAppRemoval = deny
+      result(nil)
 
     // MARK: - DeviceActivity
     case "setSchedule":
@@ -373,10 +381,11 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     }
   }
 
-  private func requestAuthorization(result: @escaping FlutterResult) {
+  private func requestAuthorization(memberType: String, result: @escaping FlutterResult) {
+    let member: FamilyControlsMember = memberType == "individual" ? .individual : .child
     Task { @MainActor in
       do {
-        try await AuthorizationCenter.shared.requestAuthorization(for: .child)
+        try await AuthorizationCenter.shared.requestAuthorization(for: member)
         result(self.currentAuthorizationStatus())
       } catch {
         result(FlutterError(

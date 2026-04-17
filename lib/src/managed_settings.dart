@@ -21,4 +21,8 @@ class ManagedSettings {
     final result = await _channel.invokeMethod<bool>('getBlockingStatus');
     return result ?? false;
   }
+
+  Future<void> setDenyAppRemoval(bool deny) {
+    return _channel.invokeMethod<void>('setDenyAppRemoval', deny);
+  }
 }

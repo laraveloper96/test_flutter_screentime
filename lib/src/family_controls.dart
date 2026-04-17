@@ -5,6 +5,8 @@ import 'models/selected_apps_summary.dart';
 
 const MethodChannel _channel = MethodChannel('flutter_screentime');
 
+enum FamilyControlsMember { child, individual }
+
 class FamilyControls {
   const FamilyControls();
 
@@ -19,8 +21,14 @@ class FamilyControls {
     return result ?? false;
   }
 
-  Future<ScreenTimeAuthorizationStatus> requestAuthorization() async {
-    final status = await _channel.invokeMethod<String>('requestAuthorization');
+  Future<ScreenTimeAuthorizationStatus> requestAuthorization({
+    // TODO(dev): Use the member parameter to request authorization for the child or individual.
+    FamilyControlsMember member = FamilyControlsMember.individual,
+  }) async {
+    final status = await _channel.invokeMethod<String>(
+      'requestAuthorization',
+      member.name,
+    );
     return ScreenTimeAuthorizationStatus.fromPlatformValue(status);
   }
 

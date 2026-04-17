@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screentime/src/device_activity.dart';
 import 'package:flutter_screentime/src/shield_extension.dart';
 
 class PermissionRequestScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class PermissionRequestScreen extends StatefulWidget {
 
 class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
   final _shield = const ShieldExtension();
+  final _deviceActivity = const DeviceActivity();
 
   StreamSubscription<void>? _permissionSub;
 
@@ -101,8 +103,21 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
 
   Future<void> _grantAccess(Duration duration) async {
     try {
+      // 1. Desbloquear temporalmente las apps
       await _shield.grantTemporaryAccess(duration: duration);
-      final expiresAt = DateTime.now().add(duration);
+
+      // 2. Configurar un ScreenTimeSchedule que re-aplique el bloqueo
+      //    cuando el intervalo termine — funciona incluso si el child
+      //    está en otra app gracias al DeviceActivityMonitor.
+      final now = DateTime.now();
+      final expiresAt = now.add(duration);
+      final schedule = ScreenTimeSchedule(
+        start: TimeOfDay(hour: now.hour, minute: now.minute),
+        end: TimeOfDay(hour: expiresAt.hour, minute: expiresAt.minute),
+      );
+      await _deviceActivity.setSchedule(schedule);
+      await _deviceActivity.startMonitoring();
+
       setState(() {
         _hasPendingRequest = false;
         _temporaryAccessActive = true;
@@ -110,7 +125,8 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
         _remaining = duration;
       });
       _addLog(
-        'Acceso concedido por ${_formatDuration(duration)}',
+        'Acceso concedido por ${_formatDuration(duration)} '
+        '(Schedule: ${_formatTimeOfDay(schedule.start)} → ${_formatTimeOfDay(schedule.end)})',
         isSuccess: true,
       );
       _startCountdown(duration);
@@ -270,6 +286,12 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
   static String _formatDuration(Duration d) {
     if (d.inMinutes >= 1) return '${d.inMinutes} min';
     return '${d.inSeconds} seg';
+  }
+
+  static String _formatTimeOfDay(TimeOfDay t) {
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 }
 
