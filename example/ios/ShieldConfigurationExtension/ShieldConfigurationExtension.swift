@@ -19,8 +19,8 @@ class ShieldConfigDataSource: ShieldConfigurationDataSource {
     // Escribe timestamp en UserDefaults del App Group para que la app Flutter
     // pueda confirmar que el proceso de extensión fue lanzado por iOS.
     if let defaults = UserDefaults(suiteName: kAppGroupID) {
-      defaults.set(Date().timeIntervalSince1970, forKey: "flutter_screentime.extensionLastRun")
-      defaults.set("init", forKey: "flutter_screentime.extensionLastTrigger")
+      defaults.set(Date().timeIntervalSince1970, forKey: "flutter_control_parental.extensionLastRun")
+      defaults.set("init", forKey: "flutter_control_parental.extensionLastTrigger")
       defaults.synchronize()
       log.info("🛡️ init() — timestamp escrito en App Group")
     } else {
@@ -75,10 +75,10 @@ class ShieldConfigDataSource: ShieldConfigurationDataSource {
     let defaults = UserDefaults(suiteName: kAppGroupID)
     log.info("🛡️ UserDefaults(suiteName: \(kAppGroupID)) available=\(defaults != nil)")
 
-    let allKeys = defaults?.dictionaryRepresentation().keys.filter { $0.hasPrefix("flutter_screentime") } ?? []
-    log.info("🛡️ flutter_screentime keys in App Group: \(allKeys.sorted())")
+    let allKeys = defaults?.dictionaryRepresentation().keys.filter { $0.hasPrefix("flutter_control_parental") } ?? []
+    log.info("🛡️ flutter_control_parental keys in App Group: \(allKeys.sorted())")
 
-    let config = defaults?.dictionary(forKey: "flutter_screentime.blockScreenConfig")
+    let config = defaults?.dictionary(forKey: "flutter_control_parental.blockScreenConfig")
     log.info("🛡️ blockScreenConfig raw: \(String(describing: config))")
 
     let title = config?["title"] as? String
@@ -97,7 +97,7 @@ class ShieldConfigDataSource: ShieldConfigurationDataSource {
     if let containerURL = FileManager.default.containerURL(
       forSecurityApplicationGroupIdentifier: kAppGroupID
     ) {
-      let iconURL = containerURL.appendingPathComponent("flutter_screentime_shield_icon.png")
+      let iconURL = containerURL.appendingPathComponent("flutter_control_parental_shield_icon.png")
       let iconExists = FileManager.default.fileExists(atPath: iconURL.path)
       icon = UIImage(contentsOfFile: iconURL.path)
       log.info("🛡️ App Group container=\(containerURL.path) — iconExists=\(iconExists) — iconLoaded=\(icon != nil)")

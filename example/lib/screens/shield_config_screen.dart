@@ -1,7 +1,7 @@
 // ignore_for_file: implementation_imports
 import 'package:flutter/material.dart';
-import 'package:flutter_screentime/flutter_screentime.dart' show ManagedSettings;
-import 'package:flutter_screentime/src/shield_extension.dart';
+import 'package:flutter_control_parental/flutter_control_parental.dart' show ManagedSettings;
+import 'package:flutter_control_parental/src/shield_extension.dart';
 
 class ShieldConfigScreen extends StatefulWidget {
   const ShieldConfigScreen({super.key});
@@ -281,7 +281,7 @@ class _ShieldConfigScreenState extends State<ShieldConfigScreen> {
                     const FlutterLogo(size: 64),
                     const SizedBox(height: 12),
                     Text(
-                      'flutter_screentime',
+                      'flutter_control_parental',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     Text(

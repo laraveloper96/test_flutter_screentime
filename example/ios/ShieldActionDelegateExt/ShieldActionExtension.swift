@@ -3,7 +3,7 @@ import Foundation
 import os
 
 private let kAppGroupID   = "group.com.ssssstudios.time4kids"
-private let kNotification = "dev.iori.flutter_screentime.shield_action"
+private let kNotification = "dev.iori.flutter_control_parental.shield_action"
 
 private let log = Logger(
     subsystem: "com.ssssstudios.time4kids.ShieldActionExt",
@@ -68,7 +68,7 @@ class ShieldActionExtension: ShieldActionDelegate {
             log.error("🛡️ ❌ No se puede acceder al App Group: \(kAppGroupID)")
             return
         }
-        defaults.set(button, forKey: "flutter_screentime.pendingShieldAction")
+        defaults.set(button, forKey: "flutter_control_parental.pendingShieldAction")
         defaults.synchronize()
         log.info("🛡️ ✅ Evento '\(button)' escrito en App Group")
 

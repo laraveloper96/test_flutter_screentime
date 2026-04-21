@@ -1,7 +1,7 @@
 // ignore_for_file: implementation_imports
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screentime/src/device_activity.dart';
+import 'package:flutter_control_parental/src/device_activity.dart';
 
 class DeviceActivityScreen extends StatefulWidget {
   const DeviceActivityScreen({super.key});

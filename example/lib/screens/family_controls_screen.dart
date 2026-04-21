@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screentime/flutter_screentime.dart';
+import 'package:flutter_control_parental/flutter_control_parental.dart';
 
 class FamilyControlsScreen extends StatefulWidget {
   const FamilyControlsScreen({super.key});

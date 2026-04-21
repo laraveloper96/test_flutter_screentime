@@ -3,7 +3,7 @@ import UIKit
 import XCTest
 
 
-@testable import flutter_screentime_plugin_template_iori
+@testable import flutter_control_parental_plugin_template_iori
 
 // This demonstrates a simple unit test of the Swift portion of this plugin's implementation.
 //
@@ -12,7 +12,7 @@ import XCTest
 class RunnerTests: XCTestCase {
 
   func testGetPlatformVersion() {
-    let plugin = FlutterScreentimePluginTemplateIoriPlugin()
+    let plugin = FlutterControlParentalPluginTemplateIoriPlugin()
 
     let call = FlutterMethodCall(methodName: "getPlatformVersion", arguments: [])
 

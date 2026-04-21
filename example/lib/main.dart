@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screentime/flutter_screentime.dart';
+import 'package:flutter_control_parental/flutter_control_parental.dart';
 
 import 'screens/app_removal_screen.dart';
 import 'screens/device_activity_screen.dart';
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'flutter_screentime',
+      title: 'flutter_control_parental',
       theme: ThemeData(
         colorSchemeSeed: Colors.indigo,
         useMaterial3: true,
@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('flutter_screentime'),
+        title: const Text('flutter_control_parental'),
         centerTitle: true,
         actions: [
           Tooltip(

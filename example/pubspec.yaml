@@ -1,5 +1,5 @@
-name: flutter_screentime_example
-description: Demonstrates how to use the flutter_screentime plugin.
+name: flutter_control_parental_example
+description: Demonstrates how to use the flutter_control_parental plugin.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -16,7 +16,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_screentime:
+  flutter_control_parental:
     path: ../
   cupertino_icons: ^1.0.8
 

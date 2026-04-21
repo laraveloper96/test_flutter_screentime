@@ -26,7 +26,7 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     emitEvent(type: "intervalDidStart", activityName: activity.rawValue)
     // Para "temporary_access" el inicio significa que el acceso está activo → no aplicamos escudo.
     // Solo aplicamos al iniciar ventanas de horario regulares.
-    if activity.rawValue != "flutter_screentime.temporary_access" {
+    if activity.rawValue != "flutter_control_parental.temporary_access" {
       applyBlocking()
     }
   }
@@ -35,9 +35,9 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     super.intervalDidEnd(for: activity)
     emitEvent(type: "intervalDidEnd", activityName: activity.rawValue)
 
-    if activity.rawValue == "flutter_screentime.temporary_access" {
+    if activity.rawValue == "flutter_control_parental.temporary_access" {
       // El periodo de acceso temporal expiró → re-aplica el escudo si el bloqueo sigue activo
-      let isEnabled = UserDefaults(suiteName: kAppGroupID)?.bool(forKey: "flutter_screentime.blockingEnabled") ?? false
+      let isEnabled = UserDefaults(suiteName: kAppGroupID)?.bool(forKey: "flutter_control_parental.blockingEnabled") ?? false
       if isEnabled {
         applyBlocking()
       }
@@ -64,7 +64,7 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     guard let sharedDefaults = UserDefaults(suiteName: kAppGroupID) else { return }
 
     guard
-      let data = sharedDefaults.data(forKey: "flutter_screentime.blockedSelection"),
+      let data = sharedDefaults.data(forKey: "flutter_control_parental.blockedSelection"),
       let selection = try? PropertyListDecoder().decode(FamilyActivitySelection.self, from: data)
     else {
       return
@@ -89,13 +89,13 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
       "activityName": activityName,
       "timestamp": Date().timeIntervalSince1970,
     ]
-    sharedDefaults.set(event, forKey: "flutter_screentime.lastActivityEvent")
+    sharedDefaults.set(event, forKey: "flutter_control_parental.lastActivityEvent")
     sharedDefaults.synchronize()
 
     // Notifica a la app principal via Darwin notification
     CFNotificationCenterPostNotification(
       CFNotificationCenterGetDarwinNotifyCenter(),
-      CFNotificationName("flutter_screentime.activityEvent" as CFString),
+      CFNotificationName("flutter_control_parental.activityEvent" as CFString),
       nil, nil, true
     )
   }

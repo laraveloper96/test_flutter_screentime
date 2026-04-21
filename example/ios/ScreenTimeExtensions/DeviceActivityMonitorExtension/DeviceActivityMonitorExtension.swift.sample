@@ -22,12 +22,12 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
   // -------------------------------------------------------------------------
   // intervalDidStart
   // Llamado cuando comienza una ventana de horario.
-  // Para el horario "flutter_screentime.schedule" re-aplica el bloqueo.
+  // Para el horario "flutter_control_parental.schedule" re-aplica el bloqueo.
   // -------------------------------------------------------------------------
   override func intervalDidStart(for activity: DeviceActivityName) {
     extLog.info("⏱️ intervalDidStart: \(activity.rawValue)")
-    guard activity.rawValue == "flutter_screentime.schedule" else { return }
-    let isEnabled = sharedDefaults?.bool(forKey: "flutter_screentime.blockingEnabled") ?? false
+    guard activity.rawValue == "flutter_control_parental.schedule" else { return }
+    let isEnabled = sharedDefaults?.bool(forKey: "flutter_control_parental.blockingEnabled") ?? false
     guard isEnabled else { return }
     applyShielding()
   }
@@ -35,17 +35,17 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
   // -------------------------------------------------------------------------
   // intervalDidEnd
   // Dos casos:
-  //  • "flutter_screentime.temporary_access" → el periodo de acceso temporal
+  //  • "flutter_control_parental.temporary_access" → el periodo de acceso temporal
   //    expiró → re-aplica el escudo si el bloqueo sigue activo.
-  //  • cualquier otro (e.g. "flutter_screentime.schedule") → ventana de horario
+  //  • cualquier otro (e.g. "flutter_control_parental.schedule") → ventana de horario
   //    terminó → limpia el escudo.
   // -------------------------------------------------------------------------
   override func intervalDidEnd(for activity: DeviceActivityName) {
     extLog.info("⏱️ intervalDidEnd: \(activity.rawValue)")
 
     switch activity.rawValue {
-    case "flutter_screentime.temporary_access":
-      let isEnabled = sharedDefaults?.bool(forKey: "flutter_screentime.blockingEnabled") ?? false
+    case "flutter_control_parental.temporary_access":
+      let isEnabled = sharedDefaults?.bool(forKey: "flutter_control_parental.blockingEnabled") ?? false
       if isEnabled {
         extLog.info("⏱️ temporary_access expirado — re-aplicando escudo")
         applyShielding()
@@ -65,7 +65,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
   // -------------------------------------------------------------------------
   override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
     extLog.info("⏱️ eventDidReachThreshold: \(event.rawValue) — \(activity.rawValue)")
-    let isEnabled = sharedDefaults?.bool(forKey: "flutter_screentime.blockingEnabled") ?? false
+    let isEnabled = sharedDefaults?.bool(forKey: "flutter_control_parental.blockingEnabled") ?? false
     guard isEnabled else { return }
     applyShielding()
   }
@@ -77,7 +77,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
   /// Lee la FamilyActivitySelection guardada en App Group y aplica el escudo.
   private func applyShielding() {
     guard
-      let data = sharedDefaults?.data(forKey: "flutter_screentime.blockedSelection"),
+      let data = sharedDefaults?.data(forKey: "flutter_control_parental.blockedSelection"),
       let selection = try? PropertyListDecoder().decode(FamilyActivitySelection.self, from: data)
     else {
       extLog.error("⏱️ applyShielding: no se pudo leer blockedSelection del App Group '\(kAppGroupID)'")

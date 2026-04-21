@@ -2,7 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screentime/src/shield_extension.dart';
+import 'package:flutter_control_parental/src/shield_extension.dart';
 
 class ShieldEventsScreen extends StatefulWidget {
   const ShieldEventsScreen({super.key});

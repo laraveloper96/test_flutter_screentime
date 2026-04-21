@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screentime/flutter_screentime.dart';
+import 'package:flutter_control_parental/flutter_control_parental.dart';
 
 class ManagedSettingsScreen extends StatefulWidget {
   const ManagedSettingsScreen({super.key});
@@ -72,7 +72,7 @@ class _ManagedSettingsScreenState extends State<ManagedSettingsScreen> {
   }
 
   Future<void> _checkExtensionDiagnostic() async {
-    const channel = MethodChannel('flutter_screentime');
+    const channel = MethodChannel('flutter_control_parental');
     try {
       final result = await channel.invokeMethod<String>('getExtensionDiagnostic');
       if (!mounted) return;

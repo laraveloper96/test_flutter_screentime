@@ -1,21 +1,21 @@
 PODS:
   - Flutter (1.0.0)
-  - flutter_screentime (0.1.0):
+  - flutter_control_parental (0.1.0):
     - Flutter
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
-  - flutter_screentime (from `.symlinks/plugins/flutter_screentime/ios`)
+  - flutter_control_parental (from `.symlinks/plugins/flutter_control_parental/ios`)
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
-  flutter_screentime:
-    :path: ".symlinks/plugins/flutter_screentime/ios"
+  flutter_control_parental:
+    :path: ".symlinks/plugins/flutter_control_parental/ios"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_screentime: 24f9d1834fc7522287344af4de949f58c5c01ffc
+  flutter_control_parental: 46562007a6ac11ab3aeb538e223aa2e6c7731396
 
 PODFILE CHECKSUM: 2e77664d62af0bc020f3cd26a857615f380ddd25
 

@@ -12,7 +12,7 @@ class SceneDelegate: FlutterSceneDelegate {
     /// En apps con scene lifecycle (iOS 13+), los deep links llegan aquí —
     /// no a application(_:open:options:) del AppDelegate.
     /// Reenviamos manualmente al AppDelegate para que FlutterAppDelegate
-    /// lo propague a los plugins registrados (incluido FlutterScreentimePlugin).
+    /// lo propague a los plugins registrados (incluido FlutterControlParentalPlugin).
     override func scene(
         _ scene: UIScene,
         openURLContexts URLContexts: Set<UIOpenURLContext>

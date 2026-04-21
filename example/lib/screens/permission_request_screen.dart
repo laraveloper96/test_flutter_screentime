@@ -2,8 +2,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screentime/src/device_activity.dart';
-import 'package:flutter_screentime/src/shield_extension.dart';
+import 'package:flutter_control_parental/src/device_activity.dart';
+import 'package:flutter_control_parental/src/shield_extension.dart';
 
 class PermissionRequestScreen extends StatefulWidget {
   const PermissionRequestScreen({super.key});
