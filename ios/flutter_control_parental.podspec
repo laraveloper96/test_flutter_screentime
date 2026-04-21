@@ -1,11 +1,11 @@
 Pod::Spec.new do |s|
-  s.name             = 'flutter_screentime'
+  s.name             = 'flutter_control_parental'
   s.version          = '0.1.0'
   s.summary          = 'Flutter plugin for Screen Time style blocking.'
   s.description      = <<-DESC
 Flutter plugin for Screen Time style blocking with host-configured iOS extensions and configurable Android overlays.
                        DESC
-  s.homepage         = 'https://github.com/ioridev/flutter_screentime'
+  s.homepage         = 'https://github.com/ioridev/flutter_control_parental'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'iori' => 'noreply@example.com' }
   s.source           = { :path => '.' }

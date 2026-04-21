@@ -6,7 +6,7 @@ import Foundation
 import os
 
 private let kAppGroupID   = "group.your.app" // ⚠️ Reemplaza con tu App Group ID
-private let kNotification = "dev.iori.flutter_screentime.shield_action"
+private let kNotification = "dev.iori.flutter_control_parental.shield_action"
 
 private let log = Logger(
     subsystem: "com.your.app.ShieldActionExt",
@@ -54,7 +54,7 @@ class ShieldActionExtension: ShieldActionDelegate {
     }
 
     private func openMainApp(completionHandler: @escaping (ShieldActionResponse) -> Void) {
-        guard let url = URL(string: "flutter-screentime://shield-action?button=primary") else {
+        guard let url = URL(string: "flutter-control-parental://shield-action?button=primary") else {
             postShieldActionFallback()
             completionHandler(.defer)
             return
@@ -72,7 +72,7 @@ class ShieldActionExtension: ShieldActionDelegate {
 
     private func postShieldActionFallback() {
         guard let defaults = UserDefaults(suiteName: kAppGroupID) else { return }
-        defaults.set("primaryButton", forKey: "flutter_screentime.pendingShieldAction")
+        defaults.set("primaryButton", forKey: "flutter_control_parental.pendingShieldAction")
         defaults.synchronize()
 
         let center = CFNotificationCenterGetDarwinNotifyCenter()

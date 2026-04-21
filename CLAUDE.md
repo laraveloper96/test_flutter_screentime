@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**flutter_screentime** is a Flutter plugin that wraps Apple's Screen Time APIs (FamilyControls, ManagedSettings, DeviceActivity) for iOS 16+. It provides a Dart interface for authorization, app selection, shield configuration, schedule-based monitoring, and temporary access grants.
+**flutter_control_parental** is a Flutter plugin that wraps Apple's Screen Time APIs (FamilyControls, ManagedSettings, DeviceActivity) for iOS 16+. It provides a Dart interface for authorization, app selection, shield configuration, schedule-based monitoring, and temporary access grants.
 
 **Key architectural split**: the plugin owns the Flutter API, method channel bridge, and configuration persistence. The **host iOS app** owns Screen Time extension targets (ShieldConfiguration, ShieldAction, DeviceActivityMonitor), entitlements, signing, and shield-screen presentation. Sample extension code lives in `templates/ios/`.
 
@@ -30,7 +30,7 @@ No unit or integration tests exist currently (`test/` directory is empty).
 
 ### Dart Layer — Four Domain Classes
 
-The API is split into four classes, each wrapping a distinct iOS framework concern. All share the same `MethodChannel('flutter_screentime')`.
+The API is split into four classes, each wrapping a distinct iOS framework concern. All share the same `MethodChannel('flutter_control_parental')`.
 
 | Class | File | Responsibility |
 |---|---|---|
@@ -41,21 +41,21 @@ The API is split into four classes, each wrapping a distinct iOS framework conce
 
 Models are in `lib/src/models/`: `ScreenTimeAuthorizationStatus`, `SelectedAppsSummary`, `ScreenTimeBlockScreenConfig`, `ScreenTimeSchedule`, `ActivityEvent`.
 
-Public barrel export: `lib/flutter_screentime.dart` — re-exports models and all four classes (with `hide` to avoid duplicate symbol exports).
+Public barrel export: `lib/flutter_control_parental.dart` — re-exports models and all four classes (with `hide` to avoid duplicate symbol exports).
 
 ### iOS Native Layer — Single Plugin File
 
-`ios/Classes/FlutterScreentimePlugin.swift` handles all method calls in one `switch` statement organized by `// MARK:` sections (FamilyControls, ManagedSettings, DeviceActivity, ShieldExtension, Diagnostics, Legacy).
+`ios/Classes/FlutterControlParentalPlugin.swift` handles all method calls in one `switch` statement organized by `// MARK:` sections (FamilyControls, ManagedSettings, DeviceActivity, ShieldExtension, Diagnostics, Legacy).
 
 **Event channels** (two-way communication from extensions to Flutter):
-- `flutter_screentime/shield_action` — emits `ShieldAction` when user taps shield buttons
-- `flutter_screentime/activity_event` — emits `ActivityEvent` from DeviceActivityMonitor extension
+- `flutter_control_parental/shield_action` — emits `ShieldAction` when user taps shield buttons
+- `flutter_control_parental/activity_event` — emits `ActivityEvent` from DeviceActivityMonitor extension
 
 **Inter-process communication** (extension → main app): Darwin Notifications (`CFNotificationCenter`) + shared `UserDefaults` (App Group). The plugin observes notifications, reads event data from shared defaults, and forwards to Flutter via EventChannel sinks. A pending-action mechanism handles the case where the app is backgrounded when the shield action occurs.
 
 ### Storage Keys (App Group shared defaults)
 
-All persisted under `flutter_screentime.*` prefix in both `UserDefaults.standard` and the App Group suite. Extensions read from the App Group to render shields and fire events. Key keys:
+All persisted under `flutter_control_parental.*` prefix in both `UserDefaults.standard` and the App Group suite. Extensions read from the App Group to render shields and fire events. Key keys:
 - `.sharedContainerId`, `.blockScreenConfig`, `.blockedSelection`, `.blockingEnabled`, `.activitySchedule`, `.shieldIcon`, `.lastActivityEvent`
 
 ### Extension Templates
@@ -70,8 +70,8 @@ Host app must: add these as Xcode targets, share the same App Group, and enable 
 ## Adding a New Method to the Plugin
 
 1. Add method to the appropriate Dart class in `lib/src/` (or create a new class if it's a new domain)
-2. Add model classes to `lib/src/models/` if serialization is needed; update barrel export in `lib/flutter_screentime.dart`
-3. Add case to the `switch` in `FlutterScreentimePlugin.swift:handle(_:result:)`
+2. Add model classes to `lib/src/models/` if serialization is needed; update barrel export in `lib/flutter_control_parental.dart`
+3. Add case to the `switch` in `FlutterControlParentalPlugin.swift:handle(_:result:)`
 4. If it needs extension↔app communication: use Darwin Notifications + shared defaults pattern (see `handleShieldActionNotification()` for reference)
 
 ## Important Design Decisions

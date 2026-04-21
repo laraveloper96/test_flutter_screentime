@@ -9,23 +9,23 @@ import os
 
 private let pluginLog = Logger(
   subsystem: "dev.iori.flutterScreentimePluginTemplateIoriExample",
-  category: "FlutterScreentime"
+  category: "FlutterControlParental"
 )
 
 private enum StorageKey {
-  static let sharedContainerId = "flutter_screentime.sharedContainerId"
-  static let blockScreenConfig = "flutter_screentime.blockScreenConfig"
-  static let blockedPackages = "flutter_screentime.blockedPackages"
-  static let blockedSelection = "flutter_screentime.blockedSelection"
-  static let blockingEnabled = "flutter_screentime.blockingEnabled"
-  static let activitySchedule = "flutter_screentime.activitySchedule"
-  static let dailyTimeLimit = "flutter_screentime.dailyTimeLimit"
-  static let shieldIcon = "flutter_screentime.shieldIcon"
-  static let lastActivityEvent = "flutter_screentime.lastActivityEvent"
+  static let sharedContainerId = "flutter_control_parental.sharedContainerId"
+  static let blockScreenConfig = "flutter_control_parental.blockScreenConfig"
+  static let blockedPackages = "flutter_control_parental.blockedPackages"
+  static let blockedSelection = "flutter_control_parental.blockedSelection"
+  static let blockingEnabled = "flutter_control_parental.blockingEnabled"
+  static let activitySchedule = "flutter_control_parental.activitySchedule"
+  static let dailyTimeLimit = "flutter_control_parental.dailyTimeLimit"
+  static let shieldIcon = "flutter_control_parental.shieldIcon"
+  static let lastActivityEvent = "flutter_control_parental.lastActivityEvent"
 }
 
-private let kActivityEventNotification = "dev.iori.flutter_screentime.activity_event"
-private let kShieldActionNotification   = "dev.iori.flutter_screentime.shield_action"
+private let kActivityEventNotification = "dev.iori.flutter_control_parental.activity_event"
+private let kShieldActionNotification   = "dev.iori.flutter_control_parental.shield_action"
 
 private final class BlockedAppsPickerModel: ObservableObject {
   @Published var selection: FamilyActivitySelection
@@ -83,7 +83,7 @@ fileprivate class ActivityEventStreamHandler: NSObject, FlutterStreamHandler {
   }
 }
 
-public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
+public final class FlutterControlParentalPlugin: NSObject, FlutterPlugin {
   private let store = ManagedSettingsStore()
   fileprivate let shieldActionHandler = ShieldActionStreamHandler()
   fileprivate let activityEventHandler = ActivityEventStreamHandler()
@@ -91,20 +91,20 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
-      name: "flutter_screentime",
+      name: "flutter_control_parental",
       binaryMessenger: registrar.messenger()
     )
-    let instance = FlutterScreentimePlugin()
+    let instance = FlutterControlParentalPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
 
     let shieldActionChannel = FlutterEventChannel(
-      name: "flutter_screentime/shield_action",
+      name: "flutter_control_parental/shield_action",
       binaryMessenger: registrar.messenger()
     )
     shieldActionChannel.setStreamHandler(instance.shieldActionHandler)
 
     let activityEventChannel = FlutterEventChannel(
-      name: "flutter_screentime/activity_event",
+      name: "flutter_control_parental/activity_event",
       binaryMessenger: registrar.messenger()
     )
     activityEventChannel.setStreamHandler(instance.activityEventHandler)
@@ -126,7 +126,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       observer,
       { (_, observer, _, _, _) in
         guard let observer = observer else { return }
-        let plugin = Unmanaged<FlutterScreentimePlugin>.fromOpaque(observer).takeUnretainedValue()
+        let plugin = Unmanaged<FlutterControlParentalPlugin>.fromOpaque(observer).takeUnretainedValue()
         plugin.handleActivityEventNotification()
       },
       kActivityEventNotification as CFString,
@@ -139,7 +139,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       observer,
       { (_, observer, _, _, _) in
         guard let observer = observer else { return }
-        let plugin = Unmanaged<FlutterScreentimePlugin>.fromOpaque(observer).takeUnretainedValue()
+        let plugin = Unmanaged<FlutterControlParentalPlugin>.fromOpaque(observer).takeUnretainedValue()
         plugin.handleShieldActionNotification()
       },
       kShieldActionNotification as CFString,
@@ -175,7 +175,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       pluginLog.error("📱 ShieldAction notification received but sharedDefaults is nil")
       return
     }
-    guard let button = shared.string(forKey: "flutter_screentime.pendingShieldAction") else {
+    guard let button = shared.string(forKey: "flutter_control_parental.pendingShieldAction") else {
       pluginLog.warning("📱 ShieldAction notification received but no pending action in App Group")
       return
     }
@@ -198,7 +198,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       emitShieldAction(button)
       // Limpia: ya fue procesado
       pendingShieldAction = nil
-      sharedDefaults()?.removeObject(forKey: "flutter_screentime.pendingShieldAction")
+      sharedDefaults()?.removeObject(forKey: "flutter_control_parental.pendingShieldAction")
       sharedDefaults()?.synchronize()
     } else {
       pluginLog.info("📱 Sin sink activo — ShieldAction guardado para foreground: \(button)")
@@ -229,7 +229,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     content.userInfo = ["shield_action": "primaryButton"]
 
     let request = UNNotificationRequest(
-      identifier: "flutter_screentime.shield_action",
+      identifier: "flutter_control_parental.shield_action",
       content: content,
       trigger: nil  // sin trigger = entrega inmediata
     )
@@ -247,8 +247,8 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
   public func applicationDidBecomeActive(_ application: UIApplication) {
     pluginLog.info("📱 applicationDidBecomeActive — verificando ShieldAction pendiente")
     // Cancelar la notificación local si el usuario ya está en la app
-    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["flutter_screentime.shield_action"])
-    UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["flutter_screentime.shield_action"])
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["flutter_control_parental.shield_action"])
+    UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["flutter_control_parental.shield_action"])
 
     guard let action = pendingShieldAction else { return }
     pluginLog.info("📱 ShieldAction pendiente encontrado al volver al foreground: \(action)")
@@ -257,7 +257,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
       guard let self else { return }
       self.pendingShieldAction = nil
-      self.sharedDefaults()?.removeObject(forKey: "flutter_screentime.pendingShieldAction")
+      self.sharedDefaults()?.removeObject(forKey: "flutter_control_parental.pendingShieldAction")
       self.sharedDefaults()?.synchronize()
       self.emitShieldAction(action)
       pluginLog.info("📱 ShieldAction emitido desde foreground: \(action)")
@@ -297,7 +297,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       persist(false, forKey: StorageKey.blockingEnabled)
       store.clearAllSettings()
       if #available(iOS 16.0, *) {
-        DeviceActivityCenter().stopMonitoring([DeviceActivityName("flutter_screentime.temporary_access")])
+        DeviceActivityCenter().stopMonitoring([DeviceActivityName("flutter_control_parental.temporary_access")])
       }
       result(nil)
     case "grantTemporaryAccess":
@@ -552,7 +552,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
   private func scheduleReblock(afterSeconds seconds: Int) {
     let center = DeviceActivityCenter()
     // Cancela cualquier acceso temporal anterior que siga activo
-    center.stopMonitoring([DeviceActivityName("flutter_screentime.temporary_access")])
+    center.stopMonitoring([DeviceActivityName("flutter_control_parental.temporary_access")])
 
     let now = Date()
     let endDate = now.addingTimeInterval(TimeInterval(seconds))
@@ -569,7 +569,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
 
     do {
       try center.startMonitoring(
-        DeviceActivityName("flutter_screentime.temporary_access"),
+        DeviceActivityName("flutter_control_parental.temporary_access"),
         during: schedule
       )
       pluginLog.info("📱 scheduleReblock: DeviceActivitySchedule activo — endDate=\(endDate)")
@@ -620,14 +620,14 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
     var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
     if let seconds = dailySeconds {
       let threshold = DateComponents(second: seconds)
-      events[DeviceActivityEvent.Name("flutter_screentime.dailyLimit")] = DeviceActivityEvent(
+      events[DeviceActivityEvent.Name("flutter_control_parental.dailyLimit")] = DeviceActivityEvent(
         threshold: threshold
       )
     }
 
     do {
       try center.startMonitoring(
-        DeviceActivityName("flutter_screentime.schedule"),
+        DeviceActivityName("flutter_control_parental.schedule"),
         during: schedule,
         events: events
       )
@@ -647,7 +647,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       result(nil)
       return
     }
-    DeviceActivityCenter().stopMonitoring([DeviceActivityName("flutter_screentime.schedule")])
+    DeviceActivityCenter().stopMonitoring([DeviceActivityName("flutter_control_parental.schedule")])
     persist(nil, forKey: StorageKey.activitySchedule)
     result(nil)
   }
@@ -681,7 +681,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       result(FlutterError(code: "no_app_group", message: "Set sharedContainerId before calling setShieldIcon.", details: nil))
       return
     }
-    let iconURL = containerURL.appendingPathComponent("flutter_screentime_shield_icon.png")
+    let iconURL = containerURL.appendingPathComponent("flutter_control_parental_shield_icon.png")
     do {
       try data.write(to: iconURL)
       result(nil)
@@ -698,9 +698,9 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
       return "❌ No se puede acceder al App Group '\(appGroupId)'"
     }
 
-    let ts = shared.double(forKey: "flutter_screentime.extensionLastRun")
-    let trigger = shared.string(forKey: "flutter_screentime.extensionLastTrigger") ?? "?"
-    let configExists = shared.dictionary(forKey: "flutter_screentime.blockScreenConfig") != nil
+    let ts = shared.double(forKey: "flutter_control_parental.extensionLastRun")
+    let trigger = shared.string(forKey: "flutter_control_parental.extensionLastTrigger") ?? "?"
+    let configExists = shared.dictionary(forKey: "flutter_control_parental.blockScreenConfig") != nil
 
     if ts > 0 {
       let date = Date(timeIntervalSince1970: ts)
@@ -819,7 +819,7 @@ public final class FlutterScreentimePlugin: NSObject, FlutterPlugin {
 
 // MARK: - URL scheme handler (ShieldActionExtension deep link)
 
-extension FlutterScreentimePlugin {
+extension FlutterControlParentalPlugin {
   public func application(
     _ app: UIApplication,
     open url: URL,
@@ -828,12 +828,12 @@ extension FlutterScreentimePlugin {
     pluginLog.info("📱 ✅ application(open:) REACHED — url=\(url.absoluteString)")
     pluginLog.info("📱 application(open:) called with URL: \(url.absoluteString)")
     
-    guard url.scheme == "flutter-screentime",
+    guard url.scheme == "flutter-control-parental",
           url.host == "shield-action",
           let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
           let buttonParam = components.queryItems?.first(where: { $0.name == "button" })?.value
     else {
-      pluginLog.warning("📱 URL didn't match expected pattern (scheme=flutter-screentime, host=shield-action)")
+      pluginLog.warning("📱 URL didn't match expected pattern (scheme=flutter-control-parental, host=shield-action)")
       return false
     }
     
@@ -845,7 +845,7 @@ extension FlutterScreentimePlugin {
 }
 
 // MARK: - Local Notification Foreground Delegate
-extension FlutterScreentimePlugin: UNUserNotificationCenterDelegate {
+extension FlutterControlParentalPlugin: UNUserNotificationCenterDelegate {
   public func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
     if #available(iOS 14.0, *) {
       completionHandler([.banner, .list, .sound, .badge])

@@ -46,7 +46,7 @@ class ShieldConfigDataSource: ShieldConfigurationDataSource {
     let defaults = UserDefaults(suiteName: kAppGroupID)
 
     // Leer configuración de texto/colores desde App Group
-    let config = defaults?.dictionary(forKey: "flutter_screentime.blockScreenConfig")
+    let config = defaults?.dictionary(forKey: "flutter_control_parental.blockScreenConfig")
     let title = config?["title"] as? String
     let subtitle = config?["subtitle"] as? String
     let primaryLabel = config?["primaryButtonLabel"] as? String
@@ -61,7 +61,7 @@ class ShieldConfigDataSource: ShieldConfigurationDataSource {
     if let containerURL = FileManager.default.containerURL(
       forSecurityApplicationGroupIdentifier: kAppGroupID
     ) {
-      let iconURL = containerURL.appendingPathComponent("flutter_screentime_shield_icon.png")
+      let iconURL = containerURL.appendingPathComponent("flutter_control_parental_shield_icon.png")
       icon = UIImage(contentsOfFile: iconURL.path)
     }
 

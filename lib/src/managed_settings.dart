@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-const MethodChannel _channel = MethodChannel('flutter_screentime');
+const MethodChannel _channel = MethodChannel('flutter_control_parental');
 
 class ManagedSettings {
   const ManagedSettings();

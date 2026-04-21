@@ -14,7 +14,7 @@ var globalMethodCall = ""
     ) -> Bool {
         let controller: FlutterViewController = window?.rootViewController as! FlutterViewController
         // メソッドチャンネル名
-        let METHOD_CHANNEL_NAME = "flutter_screentime"
+        let METHOD_CHANNEL_NAME = "flutter_control_parental"
         // FlutterMethodChannel
         let methodChannel = FlutterMethodChannel(name: METHOD_CHANNEL_NAME, binaryMessenger: controller as! FlutterBinaryMessenger)
 

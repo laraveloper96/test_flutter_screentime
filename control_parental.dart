@@ -1,5 +1,5 @@
 // =============================================================
-// PLAN DE API — flutter_screentime (iOS)
+// PLAN DE API — flutter_control_parental (iOS)
 // Este archivo define la arquitectura de clases del plugin.
 // Cada clase refleja un framework nativo de Apple.
 // =============================================================
@@ -230,7 +230,7 @@ abstract class ShieldExtension {
   /// Stream que emite un [ShieldAction] cada vez que el usuario
   /// toca un botón en la shield screen.
   /// Requiere: ShieldActionExtension configurada en el host app
-  /// con el deep link "flutter-screentime://shield-action".
+  /// con el deep link "flutter-control-parental://shield-action".
   Stream<ShieldAction> onShieldAction();
 
   /// Stream que emite un [ActivityEvent] cuando

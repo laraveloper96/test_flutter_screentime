@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'models/screen_time_authorization_status.dart';
 import 'models/selected_apps_summary.dart';
 
-const MethodChannel _channel = MethodChannel('flutter_screentime');
+const MethodChannel _channel = MethodChannel('flutter_control_parental');
 
 enum FamilyControlsMember { child, individual }
 

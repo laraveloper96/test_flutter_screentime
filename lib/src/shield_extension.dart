@@ -7,11 +7,11 @@ import 'models/screen_time_block_screen_config.dart';
 
 export 'models/screen_time_block_screen_config.dart';
 
-const MethodChannel _channel = MethodChannel('flutter_screentime');
+const MethodChannel _channel = MethodChannel('flutter_control_parental');
 const EventChannel _shieldActionChannel =
-    EventChannel('flutter_screentime/shield_action');
+    EventChannel('flutter_control_parental/shield_action');
 const EventChannel _activityEventChannel =
-    EventChannel('flutter_screentime/activity_event');
+    EventChannel('flutter_control_parental/activity_event');
 
 enum ShieldAction { primaryButton, secondaryButton }
 
